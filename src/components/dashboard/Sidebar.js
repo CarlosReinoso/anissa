@@ -82,13 +82,13 @@ const Sidebar = () => {
 
   const navLinks = [
     {
-      href: "/dashboard",
-      label: "Classes",
+      href: "/dashboard/artwork",
+      label: "Artwork",
       icon: (
         <Icon>
-          <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
-          <line x1="3" y1="6" x2="21" y2="6" />
-          <path d="M16 10a4 4 0 0 1-8 0" />
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+          <circle cx="8.5" cy="8.5" r="1.5" />
+          <polyline points="21,15 16,10 5,21" />
         </Icon>
       ),
     },

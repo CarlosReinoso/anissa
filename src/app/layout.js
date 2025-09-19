@@ -15,36 +15,35 @@ const figtree = Figtree({
 
 export const generateMetadata = async () => {
   return {
-    title: "Embody Perthshire | Specialist Neurological Physiotherapy & Pilates",
+    title: "Anissa Aouar | Freelance Illustrator & Tattoo Artist",
     description:
-      "Specialist neurological physiotherapy, Pilates, yoga and exercise therapy in Perthshire. Helping you move with confidence and live more actively with personalised care from Carol Doherty.",
+      "French illustrator and tattoo artist based in London. Versatile style featuring conceptual and colourful artworks, minimal continuous line illustrations, and pop surrealist imagery.",
     keywords:
-      "neurological physiotherapy, physiotherapy Perthshire, Pilates Perthshire, yoga therapy, exercise specialist, neurological rehabilitation, movement therapy, Carol Doherty physiotherapist, Perthshire physiotherapy, neurological conditions, stroke rehabilitation, MS physiotherapy, Parkinson's physiotherapy",
-    authors: [{ name: "Carol Doherty" }],
-    creator: "Carol Doherty",
-    publisher: "Embody Perthshire",
+      "illustrator, tattoo artist, freelance illustrator, London illustrator, French artist, pop surrealist, conceptual art, continuous line art, Deutsche Bank illustrator, commercial illustration, tattoo design",
+    authors: [{ name: "Anissa Aouar" }],
+    creator: "Anissa Aouar",
+    publisher: "Anissa Aouar",
     formatDetection: {
       email: false,
       address: false,
       telephone: false,
     },
-    metadataBase: new URL("https://embodyperthshire.co.uk"), // Replace with your actual domain
+    metadataBase: new URL("https://anissaaouar.com"), // Replace with actual domain
     alternates: {
       canonical: "/",
     },
     openGraph: {
-      title:
-        "Embody Perthshire | Specialist Neurological Physiotherapy & Pilates",
+      title: "Anissa Aouar | Freelance Illustrator & Tattoo Artist",
       description:
-        "Specialist neurological physiotherapy, Pilates, yoga and exercise therapy in Perthshire. Helping you move with confidence and live more actively.",
-      url: "https://embodyperthshire.co.uk", // Replace with your actual domain
-      siteName: "Embody Perthshire",
+        "French illustrator and tattoo artist based in London. Versatile style featuring conceptual and colourful artworks, minimal continuous line illustrations, and pop surrealist imagery.",
+      url: "https://anissaaouar.com", // Replace with actual domain
+      siteName: "Anissa Aouar",
       images: [
         {
           url: "/hero-desktop.jpg", // Your hero image
           width: 1200,
           height: 630,
-          alt: "Carol Doherty - Specialist Neurological Physiotherapist at Embody Perthshire",
+          alt: "Anissa Aouar - Freelance Illustrator & Tattoo Artist",
         },
       ],
       locale: "en_GB",
@@ -52,10 +51,9 @@ export const generateMetadata = async () => {
     },
     twitter: {
       card: "summary_large_image",
-      title:
-        "Embody Perthshire | Specialist Neurological Physiotherapy & Pilates",
+      title: "Anissa Aouar | Freelance Illustrator & Tattoo Artist",
       description:
-        "Specialist neurological physiotherapy, Pilates, yoga and exercise therapy in Perthshire. Helping you move with confidence.",
+        "French illustrator and tattoo artist based in London. Versatile style featuring conceptual and colourful artworks.",
       images: ["/hero-desktop.jpg"], // Your hero image
     },
     robots: {
@@ -69,32 +67,29 @@ export const generateMetadata = async () => {
         "max-snippet": -1,
       },
     },
-    category: "healthcare",
-    classification: "medical",
+    category: "art",
+    classification: "creative",
     other: {
       "application/ld+json": JSON.stringify({
         "@context": "https://schema.org",
-        "@type": "Physician",
-        name: "Carol Doherty",
-        jobTitle: "Specialist Neurological Physiotherapist",
-        worksFor: {
-          "@type": "Organization",
-          name: "Embody Perthshire",
-        },
+        "@type": "Person",
+        name: "Anissa Aouar",
+        jobTitle: "Freelance Illustrator & Tattoo Artist",
         description:
-          "Specialist Neurological Physiotherapist and Pilates, Yoga & Exercise Specialist",
+          "French illustrator and tattoo artist based in London. Versatile style featuring conceptual and colourful artworks, minimal continuous line illustrations, and pop surrealist imagery.",
         address: {
           "@type": "PostalAddress",
-          addressRegion: "Perthshire",
+          addressLocality: "London",
           addressCountry: "GB",
         },
-        specialty: [
-          "Neurological Physiotherapy",
-          "Pilates",
-          "Yoga Therapy",
-          "Exercise Specialist",
+        knowsAbout: [
+          "Illustration",
+          "Tattoo Art",
+          "Pop Surrealism",
+          "Commercial Art",
+          "Vector Graphics",
         ],
-        url: "https://embodyperthshire.co.uk",
+        url: "https://anissaaouar.com",
       }),
     },
   };

@@ -6,7 +6,7 @@ export default function SocialMediaIcons({ isScrolled }) {
 
   return (
     <div className="flex items-center gap-4">
-      {/* <a
+      <a
         href={`${INSTAGRAM_PROFILE}`}
         target="_blank"
         rel="noopener noreferrer"
@@ -24,7 +24,7 @@ export default function SocialMediaIcons({ isScrolled }) {
           <circle cx="12" cy="12" r="4" />
           <circle cx="18" cy="6" r="1" />
         </svg>
-      </a> */}
+      </a>
       <a
         href={`mailto:${EMAIL_ADDRESS}`}
         aria-label="Email"

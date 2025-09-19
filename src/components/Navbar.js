@@ -1,79 +1,65 @@
 "use client";
 import { useState, useEffect } from "react";
 import { Figtree } from "next/font/google";
-import Logo from "@/components/Logo";
-import SocialMediaIcons from "@/components/SocialMediaIcons";
-import { NAV_ITEMS } from "@/constants";
+import { NAV_ITEMS, ARTIST_INFO } from "@/constants";
+import Logo from "./Logo";
+import SocialMediaIcons from "./SocialMediaIcons";
 
 const figtree = Figtree({ subsets: ["latin"] });
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
+  const [activePath, setActivePath] = useState("/");
 
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    setActivePath(window.location.pathname);
   }, []);
 
   return (
     <header
-      className={`fixed top-0 left-0 w-full z-50 ${
-        figtree.className
-      } transition-colors duration-300 ${
-        isScrolled ? "bg-white" : "bg-transparent"
-      }`}
+      className={`fixed top-0 left-0 w-full z-50 bg-black ${figtree.className}`}
       style={{ pointerEvents: "auto" }}
     >
-      <nav
-        className={`max-w-7xl mx-auto flex items-center justify-between px-4 py-4 ${
-          isScrolled ? "md:py-10" : "md:py-16"
-        } transition-colors duration-300 ${
-          isScrolled ? "text-black" : "text-white"
-        }`}
-      >
+      <nav className="max-w-7xl mx-auto flex items-center justify-between px-6 py-4">
         {/* Left: Social Media Icons */}
-        <div className="flex-1 flex items-center">
-          <SocialMediaIcons isScrolled={isScrolled} />
+        <div className="flex-1">
+          <SocialMediaIcons isScrolled={false} />
         </div>
+
         {/* Center: Logo */}
-        <div className="absolute left-1/2 transform -translate-x-1/2 flex justify-center items-center">
-          <Logo isScrolled={isScrolled} />
+        <div className="flex-1 flex justify-center">
+          <Logo onClick={() => setOpen(false)} />
         </div>
-        {/* Right: Hamburger (mobile) or menu (desktop) */}
-        <div className="flex-1 flex justify-end items-center pr-4">
+
+        {/* Right: Navigation Menu */}
+        <div className="flex-1 flex justify-end">
           {/* Desktop menu */}
-          <div
-            className={`hidden lg:flex gap-4 xl:gap-6 text-base font-medium font-figtree transition-colors duration-300 ${
-              isScrolled ? "text-black" : "text-white"
-            }`}
-          >
+          <div className="hidden lg:flex gap-8 text-sm font-medium">
             {NAV_ITEMS.map((item) => (
               <a
                 key={item.href}
                 href={item.href}
-                className={`relative group hover:text-primary text-xs md:text-sm lg:text-sm xl:text-base whitespace-nowrap ${
-                  isScrolled ? "text-black" : "text-white"
+                className={`relative text-white uppercase tracking-wide hover:text-gray-300 transition-colors ${
+                  activePath === item.href
+                    ? "underline decoration-white underline-offset-4"
+                    : ""
                 }`}
               >
                 {item.label}
-                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full"></span>
               </a>
             ))}
           </div>
+
           {/* Hamburger for mobile */}
           <button
-            className="lg:hidden ml-4 focus:outline-none"
+            className="lg:hidden focus:outline-none"
             aria-label="Open menu"
             onClick={() => setOpen(true)}
           >
             <svg
-              className="w-7 h-7"
+              className="w-6 h-6 text-white"
               fill="none"
-              stroke={isScrolled ? "black" : "white"}
+              stroke="currentColor"
               strokeWidth="2"
               viewBox="0 0 24 24"
             >
@@ -86,29 +72,31 @@ export default function Navbar() {
           </button>
         </div>
       </nav>
+
       {/* Mobile Modal */}
       {open && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 z-40 flex justify-end">
-          <div className="w-full bg-primary h-full flex flex-col p-8 relative animate-slide-in-right">
+        <div className="fixed inset-0 bg-black bg-opacity-90 z-40 flex justify-end">
+          <div className="w-full bg-black h-full flex flex-col p-8 relative">
             <button
-              className="absolute top-4 right-4 text-black text-3xl focus:outline-none"
+              className="absolute top-4 right-4 text-white text-3xl focus:outline-none"
               aria-label="Close menu"
               onClick={() => setOpen(false)}
             >
               &times;
             </button>
             <div className="flex-1 flex flex-col justify-center items-center gap-8">
-              <div className="flex flex-col items-center md:items-start mb-8">
+              <div className="flex flex-col items-center mb-8">
                 <Logo onClick={() => setOpen(false)} />
+                <div className="mt-4">
+                  <SocialMediaIcons isScrolled={false} />
+                </div>
               </div>
 
               {NAV_ITEMS.map((item) => (
                 <a
                   key={item.href}
                   href={item.href}
-                  className={`text-xl font-medium hover:text-secondary transition font-figtree ${
-                    isScrolled ? "text-black" : "text-white"
-                  }`}
+                  className="text-xl font-medium text-white uppercase tracking-wide hover:text-gray-300 transition-colors"
                   onClick={() => setOpen(false)}
                 >
                   {item.label}

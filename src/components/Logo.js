@@ -18,7 +18,8 @@ export default function Logo({ isScrolled, onClick }) {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  const logoSize = isScrolled ? (isMobile ? 60 : 100) : isMobile ? 80 : 150;
+  // Smaller logo when scrolled
+  const logoSize = isScrolled ? (isMobile ? 40 : 60) : isMobile ? 80 : 120;
 
   return (
     <div
@@ -32,11 +33,11 @@ export default function Logo({ isScrolled, onClick }) {
         className="flex flex-col items-center md:items-start"
       >
         <Image
-          src="/logo.png"
+          src="/logo.jpg"
           alt="logo"
           width={logoSize}
           height={logoSize}
-          className="transition-all duration-300 md:translate-y-0 translate-y-0.5"
+          className="transition-all duration-300 md:translate-y-0 translate-y-0.5 invert brightness-[0.87]"
         />
       </Link>
     </div>

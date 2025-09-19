@@ -1,25 +1,11 @@
 "use client";
 import Image from "next/image";
 import Link from "next/link";
-import { StarIcon } from "@heroicons/react/24/solid";
 
-export default function DashboardProductCard({ product, onToggleFeatured }) {
+export default function DashboardProductCard({ product }) {
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden">
       <div className="relative">
-        <button
-          className="absolute top-2 right-2 z-10"
-          onClick={() => onToggleFeatured(product.id)}
-          title={
-            product.is_featured ? "Remove from featured" : "Add to featured"
-          }
-        >
-          <StarIcon
-            className={`w-6 h-6 ${
-              product.is_featured ? "text-yellow-400" : "text-white"
-            }`}
-          />
-        </button>
         <Link href={`/dashboard/product/${product.id}`}>
           <div className="relative h-48 w-full">
             <Image
