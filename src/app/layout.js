@@ -32,6 +32,14 @@ export const generateMetadata = async () => {
     alternates: {
       canonical: "/",
     },
+    icons: {
+      icon: [
+        { url: "/favicon.ico", sizes: "any" },
+        { url: "/logo.jpg", type: "image/jpeg" },
+      ],
+      shortcut: "/favicon.ico",
+      apple: "/logo.jpg",
+    },
     openGraph: {
       title: "Anissa Aouar | Freelance Illustrator & Tattoo Artist",
       description:
