@@ -1,8 +1,11 @@
 import { INSTAGRAM_PROFILE, EMAIL_ADDRESS } from "../constants";
 
-export default function SocialMediaIcons({ isScrolled }) {
+export default function SocialMediaIcons({ isScrolled, inMobileMenu = false }) {
   const iconSize = "w-5 h-5";
   const strokeWidth = "1.5";
+
+  // In mobile menu, always white; otherwise based on scroll state
+  const iconColor = inMobileMenu ? "white" : isScrolled ? "black" : "white";
 
   return (
     <div className="flex items-center gap-4">
@@ -16,7 +19,7 @@ export default function SocialMediaIcons({ isScrolled }) {
         <svg
           className={`${iconSize} group-hover:stroke-primary group-hover:fill-primary/10`}
           fill="none"
-          stroke={isScrolled ? "black" : "white"}
+          stroke={iconColor}
           strokeWidth={strokeWidth}
           viewBox="0 0 24 24"
         >
@@ -33,7 +36,7 @@ export default function SocialMediaIcons({ isScrolled }) {
         <svg
           className={`${iconSize} group-hover:stroke-primary group-hover:fill-primary/10`}
           fill="none"
-          stroke={isScrolled ? "black" : "white"}
+          stroke={iconColor}
           strokeWidth={strokeWidth}
           viewBox="0 0 24 24"
         >

@@ -8,7 +8,7 @@ export default function AboutPage() {
   return (
     <div className="bg-white text-black pt-20">
       {/* Hero Section */}
-      <section className="py-16 md:py-24">
+      <section className="py-16 md:py-24 mt-24">
         <div className="max-w-6xl mx-auto px-6">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <motion.div
@@ -37,7 +37,7 @@ export default function AboutPage() {
               viewport={{ once: true }}
               className="space-y-6"
             >
-              <h1 className="text-4xl md:text-5xl font-bold text-black mb-6">
+              <h1 className="text-4xl md:text-5xl font-bold text-black mb-6 ">
                 {ARTIST_INFO.name}
               </h1>
               <p className="text-xl text-gray-600 mb-4">{ARTIST_INFO.title}</p>
@@ -48,14 +48,14 @@ export default function AboutPage() {
                 {ARTIST_INFO.bio}
               </p>
               <div className="flex flex-wrap gap-4 pt-4">
-                <div className="bg-black text-white px-4 py-2 rounded-full">
-                  <span className="font-medium">Illustration</span>
+                <div className="bg-black  px-4 py-2 rounded-full">
+                  <span className="font-medium text-white" >Illustration</span>
                 </div>
                 <div className="bg-black text-white px-4 py-2 rounded-full">
-                  <span className="font-medium">Tattoo Art</span>
+                  <span className="font-medium text-white">Tattoo Art</span>
                 </div>
                 <div className="bg-black text-white px-4 py-2 rounded-full">
-                  <span className="font-medium">Pop Surrealism</span>
+                  <span className="font-medium text-white">Pop Surrealism</span>
                 </div>
               </div>
             </motion.div>

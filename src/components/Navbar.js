@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { Figtree } from "next/font/google";
-import { NAV_ITEMS, SUBMENU_ITEMS, NAV_FONT_SIZES } from "@/constants";
+import { NAV_ITEMS, NAV_FONT_SIZES } from "@/constants";
 import Logo from "./Logo";
 import SocialMediaIcons from "./SocialMediaIcons";
 
@@ -12,7 +12,57 @@ export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [menuItems, setMenuItems] = useState({ graphics: [], tattoos: [] });
+  const [activeHash, setActiveHash] = useState("");
+  const [isMobile, setIsMobile] = useState(false);
   const activePath = usePathname();
+
+  // Fetch menu items from Supabase
+  useEffect(() => {
+    const fetchMenuItems = async () => {
+      try {
+        const [graphicsRes, tattoosRes] = await Promise.all([
+          fetch("/api/menu-items?section=graphics"),
+          fetch("/api/menu-items?section=tattoos"),
+        ]);
+
+        const graphicsData = await graphicsRes.json();
+        const tattoosData = await tattoosRes.json();
+
+        setMenuItems({
+          graphics: graphicsData.data || [],
+          tattoos: tattoosData.data || [],
+        });
+      } catch (error) {
+        console.error("Error fetching menu items:", error);
+      }
+    };
+
+    fetchMenuItems();
+  }, []);
+
+  // Handle hash changes
+  useEffect(() => {
+    const updateHash = () => {
+      setActiveHash(window.location.hash.slice(1));
+    };
+
+    updateHash();
+    window.addEventListener("hashchange", updateHash);
+    return () => window.removeEventListener("hashchange", updateHash);
+  }, []);
+
+  // Prevent body scroll when mobile menu is open
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open]);
 
   useEffect(() => {
     // Enhanced scroll listener with progress tracking for smoother transitions
@@ -40,14 +90,29 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Track mobile/desktop viewport
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
   // Determine if we should show submenu
   const showSubmenu =
     activePath.startsWith("/graphics") || activePath.startsWith("/tattoos");
   const submenuItems = activePath.startsWith("/graphics")
-    ? SUBMENU_ITEMS.graphics
+    ? menuItems.graphics
     : activePath.startsWith("/tattoos")
-    ? SUBMENU_ITEMS.tattoos
+    ? menuItems.tattoos
     : null;
+
+  const handleSubmenuClick = (slug) => {
+    window.location.hash = slug;
+  };
 
   return (
     <header
@@ -75,13 +140,13 @@ export default function Navbar() {
             >
               {/* Main Navigation Menu */}
               <div
-                className={`flex justify-between w-full font-bold transition-all duration-700 ease-out`}
+                className={`hidden lg:flex justify-between w-full font-bold transition-all duration-700 ease-out`}
               >
                 {NAV_ITEMS.map((item) => (
                   <a
                     key={item.href}
                     href={item.href}
-                    className={`relative text-black uppercase tracking-wide hover:text-gray-600 transition-all duration-700 ease-out ${
+                    className={`relative text-black uppercase tracking-wide hover:text-gray-600 hover:border-b-4 hover:border-black transition-all duration-700 ease-out ${
                       NAV_FONT_SIZES.main
                     } ${
                       activePath === item.href ||
@@ -118,20 +183,22 @@ export default function Navbar() {
         // Compact layout when scrolled
         <nav className="bg-white transition-all duration-700 ease-out">
           <div
-            className="max-w-7xl mx-auto relative flex items-center justify-between px-6 transition-all duration-700 ease-out"
+            className="max-w-7xl mx-auto relative flex items-center justify-between transition-all duration-700 ease-out"
             style={{
-              paddingTop: `${16 + scrollProgress * 4}px`, // Increase padding smoothly
-              paddingBottom: `${16 + scrollProgress * 4}px`,
+              paddingLeft: "1.5rem",
+              paddingRight: "1.5rem",
+              paddingTop: `${20 + scrollProgress * (isMobile ? 8 : 4)}px`, // More padding on mobile when scrolled
+              paddingBottom: `${20 + scrollProgress * (isMobile ? 8 : 4)}px`,
             }}
           >
             {/* Left menu items */}
-            <div className="flex gap-8 font-bold transition-all duration-700 ease-out">
+            <div className="hidden lg:flex gap-8 font-bold transition-all duration-700 ease-out">
               {NAV_ITEMS.slice(0, Math.ceil(NAV_ITEMS.length / 2)).map(
                 (item) => (
                   <a
                     key={item.href}
                     href={item.href}
-                    className={`relative text-black uppercase tracking-wide hover:text-gray-600 transition-all duration-700 ease-out ${
+                    className={`relative text-black uppercase tracking-wide hover:text-gray-600 hover:border-b-4 hover:border-black transition-all duration-700 ease-out ${
                       NAV_FONT_SIZES.main
                     } ${
                       activePath === item.href ||
@@ -164,16 +231,16 @@ export default function Navbar() {
             </div>
 
             {/* Right menu items */}
-            <div className="flex gap-8 font-bold transition-all duration-700 ease-out">
+            <div className="hidden lg:flex gap-8 font-bold transition-all duration-700 ease-out">
               {NAV_ITEMS.slice(Math.ceil(NAV_ITEMS.length / 2)).map((item) => (
                 <a
                   key={item.href}
                   href={item.href}
-                  className={`relative text-black uppercase tracking-wide hover:text-gray-600 transition-all duration-700 ease-out ${
+                  className={`relative text-black uppercase tracking-wide hover:text-gray-600 hover:border-b-4 hover:border-black transition-all duration-700 ease-out ${
                     NAV_FONT_SIZES.main
                   } ${
                     activePath === item.href || activePath.startsWith(item.href)
-                      ? "underline decoration-black underline-offset-4 decoration-8" // Thicker underline
+                      ? "border-b-4 border-black pb-1" // Thicker underline with border
                       : ""
                   }`}
                   style={{
@@ -190,22 +257,22 @@ export default function Navbar() {
       )}
 
       {/* Submenu - black background with white text */}
-      {showSubmenu && submenuItems && (
-        <div className="bg-black transition-all duration-700 ease-out">
+      {showSubmenu && submenuItems && submenuItems.length > 0 && (
+        <div className="hidden lg:block bg-black transition-all duration-700 ease-out">
           <div className="max-w-7xl mx-auto flex justify-between px-6 py-4">
             <div className="flex justify-between w-full">
               {submenuItems.map((item) => (
-                <a
-                  key={item.href}
-                  href={item.href}
+                <button
+                  key={item.id}
+                  onClick={() => handleSubmenuClick(item.slug)}
                   className={`relative text-white uppercase tracking-wide transition-all duration-300 ease-out px-4 py-2 hover:border-b-4 hover:border-white ${
                     NAV_FONT_SIZES.submenu
                   } ${
-                    activePath === item.href ? "border-b-4 border-white" : ""
+                    activeHash === item.slug ? "border-b-4 border-white" : ""
                   }`}
                 >
-                  {item.label}
-                </a>
+                  {item.name}
+                </button>
               ))}
             </div>
           </div>
@@ -214,7 +281,7 @@ export default function Navbar() {
 
       {/* Mobile Hamburger - positioned absolutely */}
       <button
-        className="lg:hidden fixed top-4 right-4 z-50 focus:outline-none bg-white p-2 rounded transition-all duration-500 ease-out"
+        className="lg:hidden fixed top-4 right-4 z-[60] focus:outline-none bg-white p-2 rounded transition-all duration-500 ease-out"
         aria-label="Open menu"
         onClick={() => setOpen(true)}
       >
@@ -235,20 +302,27 @@ export default function Navbar() {
 
       {/* Mobile Modal */}
       {open && (
-        <div className="fixed inset-0 bg-black bg-opacity-90 z-40 flex justify-end transition-all duration-500 ease-out">
-          <div className="w-full bg-black h-full flex flex-col p-8 relative">
+        <div className="fixed inset-0 w-screen h-screen bg-black z-[70] overflow-hidden">
+          <div className="w-full h-full bg-black flex flex-col p-8 relative overflow-y-auto">
             <button
-              className="absolute top-4 right-4 text-white text-3xl focus:outline-none transition-all duration-500 ease-out"
+              className="absolute top-6 right-6 text-white text-4xl focus:outline-none transition-all duration-300 ease-out z-[80] hover:text-gray-300"
               aria-label="Close menu"
               onClick={() => setOpen(false)}
             >
               &times;
             </button>
-            <div className="flex-1 flex flex-col justify-center items-center gap-8">
-              <div className="flex flex-col items-center mb-8">
-                <Logo isScrolled={isScrolled} onClick={() => setOpen(false)} />
-                <div className="mt-4">
-                  <SocialMediaIcons isScrolled={isScrolled} />
+            <div className="flex-1 flex flex-col justify-center items-center gap-8 py-8">
+              <div className="flex flex-col items-center mb-4">
+                <Logo
+                  isScrolled={isScrolled}
+                  onClick={() => setOpen(false)}
+                  inMobileMenu={true}
+                />
+                <div className="mt-6">
+                  <SocialMediaIcons
+                    isScrolled={isScrolled}
+                    inMobileMenu={true}
+                  />
                 </div>
               </div>
 
@@ -256,7 +330,7 @@ export default function Navbar() {
                 <a
                   key={item.href}
                   href={item.href}
-                  className={`${NAV_FONT_SIZES.mobile} font-medium text-white uppercase tracking-wide hover:text-gray-300 transition-all duration-500 ease-out`}
+                  className={`${NAV_FONT_SIZES.mobile} font-bold text-white uppercase tracking-wide hover:text-gray-300 transition-all duration-300 ease-out`}
                   onClick={() => setOpen(false)}
                 >
                   {item.label}
@@ -264,17 +338,25 @@ export default function Navbar() {
               ))}
 
               {/* Mobile submenu */}
-              {showSubmenu && submenuItems && (
-                <div className="mt-8 flex flex-col gap-4">
+              {showSubmenu && submenuItems && submenuItems.length > 0 && (
+                <div className="mt-6 flex flex-col gap-3 items-center">
                   {submenuItems.map((item) => (
-                    <a
-                      key={item.href}
-                      href={item.href}
-                      className={`${NAV_FONT_SIZES.mobileSubmenu} text-white uppercase tracking-wide hover:text-gray-300 transition-all duration-500 ease-out`}
-                      onClick={() => setOpen(false)}
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        handleSubmenuClick(item.slug);
+                        setOpen(false);
+                      }}
+                      className={`${
+                        NAV_FONT_SIZES.mobileSubmenu
+                      } text-white uppercase tracking-wide hover:text-gray-300 transition-all duration-300 ease-out ${
+                        activeHash === item.slug
+                          ? "border-b-2 border-white pb-1"
+                          : ""
+                      }`}
                     >
-                      {item.label}
-                    </a>
+                      {item.name}
+                    </button>
                   ))}
                 </div>
               )}

@@ -21,27 +21,67 @@ export default function NewArtwork() {
     title: "",
     description: "",
     category: "graphics",
-    sub_category: "",
+    menu_item_id: "",
+    subcategory_id: "",
   });
 
   const [selectedImage, setSelectedImage] = useState(null);
   const [selectedImages, setSelectedImages] = useState([]);
+  const [menuItems, setMenuItems] = useState([]);
   const [subcategories, setSubcategories] = useState([]);
+  const [loadingMenuItems, setLoadingMenuItems] = useState(false);
   const [loadingSubcategories, setLoadingSubcategories] = useState(false);
   const [bulkMode, setBulkMode] = useState(false);
   const [uploadProgress, setUploadProgress] = useState({});
 
-  // Fetch subcategories when category changes
+  // Fetch menu items when category changes
   useEffect(() => {
     if (newArtwork.category) {
-      fetchSubcategories(newArtwork.category);
+      fetchMenuItems(newArtwork.category);
     }
   }, [newArtwork.category]);
 
-  const fetchSubcategories = async (section) => {
+  // Fetch subcategories when menu item changes
+  useEffect(() => {
+    if (newArtwork.menu_item_id) {
+      fetchSubcategories(newArtwork.menu_item_id);
+    } else {
+      setSubcategories([]);
+      setNewArtwork((prev) => ({ ...prev, subcategory_id: "" }));
+    }
+  }, [newArtwork.menu_item_id]);
+
+  const fetchMenuItems = async (section) => {
+    try {
+      setLoadingMenuItems(true);
+      const response = await fetch(`/api/menu-items?section=${section}`);
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to fetch menu items");
+      }
+
+      setMenuItems(result.data);
+      // Reset menu item and subcategory selection when category changes
+      setNewArtwork((prev) => ({
+        ...prev,
+        menu_item_id: "",
+        subcategory_id: "",
+      }));
+    } catch (err) {
+      console.error("Error fetching menu items:", err);
+      setError(err.message);
+    } finally {
+      setLoadingMenuItems(false);
+    }
+  };
+
+  const fetchSubcategories = async (menuItemId) => {
     try {
       setLoadingSubcategories(true);
-      const response = await fetch(`/api/subcategories?section=${section}`);
+      const response = await fetch(
+        `/api/subcategories?menu_item_id=${menuItemId}`
+      );
       const result = await response.json();
 
       if (!response.ok) {
@@ -49,8 +89,8 @@ export default function NewArtwork() {
       }
 
       setSubcategories(result.data);
-      // Reset subcategory selection when category changes
-      setNewArtwork((prev) => ({ ...prev, sub_category: "" }));
+      // Reset subcategory selection when menu item changes
+      setNewArtwork((prev) => ({ ...prev, subcategory_id: "" }));
     } catch (err) {
       console.error("Error fetching subcategories:", err);
       setError(err.message);
@@ -170,7 +210,7 @@ export default function NewArtwork() {
         }
       }
 
-      if (!newArtwork.sub_category) {
+      if (!newArtwork.subcategory_id) {
         throw new Error("Please select a subcategory");
       }
 
@@ -200,8 +240,8 @@ export default function NewArtwork() {
             title: imageData.title,
             description: newArtwork.description,
             storage_path: imageData.url,
-            category: newArtwork.category,
-            sub_category: newArtwork.sub_category,
+            category: newArtwork.category, // Keep for backward compatibility
+            subcategory_id: newArtwork.subcategory_id,
             slug: slug,
           });
         }
@@ -225,8 +265,8 @@ export default function NewArtwork() {
           title: newArtwork.title,
           description: newArtwork.description,
           storage_path: selectedImage,
-          category: newArtwork.category,
-          sub_category: newArtwork.sub_category,
+          category: newArtwork.category, // Keep for backward compatibility
+          subcategory_id: newArtwork.subcategory_id,
           slug: slug,
         });
 
@@ -375,7 +415,7 @@ export default function NewArtwork() {
 
         <div>
           <label className="block text-sm font-medium text-white mb-2">
-            Category *
+            Section *
           </label>
           <select
             required
@@ -393,6 +433,53 @@ export default function NewArtwork() {
         {newArtwork.category && (
           <div>
             <label className="block text-sm font-medium text-white mb-2">
+              Menu Item (Submenu) *
+            </label>
+            {loadingMenuItems ? (
+              <div className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white flex items-center">
+                <LoadingSpinner size="sm" className="mr-2" />
+                <span className="text-gray-400">Loading menu items...</span>
+              </div>
+            ) : (
+              <>
+                <select
+                  required
+                  value={newArtwork.menu_item_id}
+                  onChange={(e) =>
+                    setNewArtwork({
+                      ...newArtwork,
+                      menu_item_id: e.target.value,
+                    })
+                  }
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-secondary"
+                >
+                  <option value="">Select a menu item</option>
+                  {menuItems.map((menuItem) => (
+                    <option key={menuItem.id} value={menuItem.id}>
+                      {menuItem.name}
+                    </option>
+                  ))}
+                </select>
+                {menuItems.length === 0 && !loadingMenuItems && (
+                  <p className="text-sm text-gray-400 mt-1">
+                    No menu items found. Please create menu items first in the{" "}
+                    <a
+                      href={`/dashboard/${newArtwork.category}`}
+                      className="text-secondary hover:underline"
+                    >
+                      {newArtwork.category} dashboard
+                    </a>
+                    .
+                  </p>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
+        {newArtwork.menu_item_id && (
+          <div>
+            <label className="block text-sm font-medium text-white mb-2">
               Subcategory *
             </label>
             {loadingSubcategories ? (
@@ -401,28 +488,40 @@ export default function NewArtwork() {
                 <span className="text-gray-400">Loading subcategories...</span>
               </div>
             ) : (
-              <select
-                required
-                value={newArtwork.sub_category}
-                onChange={(e) =>
-                  setNewArtwork({ ...newArtwork, sub_category: e.target.value })
-                }
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-secondary"
-              >
-                <option value="">Select a subcategory</option>
-                {subcategories.map((subcategory) => (
-                  <option key={subcategory.id} value={subcategory.name}>
-                    {subcategory.name.charAt(0).toUpperCase() +
-                      subcategory.name.slice(1)}
-                  </option>
-                ))}
-              </select>
-            )}
-            {subcategories.length === 0 && !loadingSubcategories && (
-              <p className="text-sm text-gray-400 mt-1">
-                No subcategories found. Please create subcategories first in the
-                dashboard.
-              </p>
+              <>
+                <select
+                  required
+                  value={newArtwork.subcategory_id}
+                  onChange={(e) =>
+                    setNewArtwork({
+                      ...newArtwork,
+                      subcategory_id: e.target.value,
+                    })
+                  }
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-secondary"
+                >
+                  <option value="">Select a subcategory</option>
+                  {subcategories.map((subcategory) => (
+                    <option key={subcategory.id} value={subcategory.id}>
+                      {subcategory.name.charAt(0).toUpperCase() +
+                        subcategory.name.slice(1)}
+                    </option>
+                  ))}
+                </select>
+                {subcategories.length === 0 && !loadingSubcategories && (
+                  <p className="text-sm text-gray-400 mt-1">
+                    No subcategories found in this menu item. Please create
+                    subcategories first in the{" "}
+                    <a
+                      href={`/dashboard/${newArtwork.category}`}
+                      className="text-secondary hover:underline"
+                    >
+                      {newArtwork.category} dashboard
+                    </a>
+                    .
+                  </p>
+                )}
+              </>
             )}
           </div>
         )}
@@ -451,7 +550,7 @@ export default function NewArtwork() {
             disabled={
               loading ||
               uploadingImage ||
-              !newArtwork.sub_category ||
+              !newArtwork.subcategory_id ||
               (bulkMode ? selectedImages.length === 0 : !selectedImage)
             }
             className="bg-secondary hover:bg-secondary/80"

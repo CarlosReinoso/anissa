@@ -111,11 +111,12 @@ export async function DELETE(request, { params }) {
       `Deleting subcategory: ${subcategory.name} (${subcategory.section})`
     );
 
-    // Find all artwork in this subcategory
+    // Find all artwork in this subcategory using both old text field and new FK
+    // This ensures we catch artwork using either the old or new structure
     const { data: artworkList, error: artworkError } = await supabase
       .from("artwork_images")
       .select("id, title, storage_path")
-      .eq("sub_category", subcategory.name)
+      .or(`sub_category.eq.${subcategory.name},subcategory_id.eq.${id}`)
       .eq("section", subcategory.section);
 
     if (artworkError) {
@@ -126,74 +127,27 @@ export async function DELETE(request, { params }) {
       );
     }
 
-    console.log(`Found ${artworkList.length} artwork items to delete`);
+    console.log(`Found ${artworkList?.length || 0} artwork items to delete`);
 
-    // Delete each artwork item
-    for (const artwork of artworkList) {
+    // Delete each artwork item using the artwork DELETE helper
+    const deletionResults = [];
+    for (const artwork of artworkList || []) {
       console.log(`Deleting artwork: ${artwork.title} (ID: ${artwork.id})`);
 
-      // Delete from database
-      const { error: deleteError } = await supabase
-        .from("artwork_images")
-        .delete()
-        .eq("id", artwork.id);
-
-      if (deleteError) {
-        console.error(`Failed to delete artwork ${artwork.id}:`, deleteError);
-        continue; // Continue with other artwork even if one fails
+      try {
+        // Use the deleteArtwork helper function defined below
+        await deleteArtwork(artwork.id, artwork.storage_path);
+        deletionResults.push({ id: artwork.id, success: true });
+        console.log(`✓ Successfully deleted artwork: ${artwork.title}`);
+      } catch (err) {
+        console.error(`✗ Failed to delete artwork ${artwork.id}:`, err);
+        deletionResults.push({
+          id: artwork.id,
+          success: false,
+          error: err.message,
+        });
+        // Continue with other artwork even if one fails
       }
-
-      // Delete from storage if storage_path exists
-      if (artwork.storage_path) {
-        try {
-          console.log("Deleting storage file:", artwork.storage_path);
-
-          // Extract the file path from the storage URL
-          const url = new URL(artwork.storage_path);
-          const pathParts = url.pathname
-            .split("/")
-            .filter((part) => part.length > 0);
-
-          // Find the bucket name and file path
-          let bucketName = "images"; // default bucket
-          let filePath = "";
-
-          // Handle different URL formats
-          const publicIndex = pathParts.findIndex((part) => part === "public");
-          const signIndex = pathParts.findIndex((part) => part === "sign");
-          const imagesIndex = pathParts.findIndex((part) => part === "images");
-
-          if (publicIndex !== -1 && publicIndex < pathParts.length - 1) {
-            bucketName = pathParts[publicIndex + 1];
-            filePath = pathParts.slice(publicIndex + 2).join("/");
-          } else if (signIndex !== -1 && signIndex < pathParts.length - 1) {
-            bucketName = pathParts[signIndex + 1];
-            filePath = pathParts.slice(signIndex + 2).join("/");
-          } else if (imagesIndex !== -1) {
-            bucketName = "images";
-            filePath = pathParts.slice(imagesIndex + 1).join("/");
-          } else {
-            filePath = pathParts[pathParts.length - 1];
-          }
-
-          console.log("Bucket name:", bucketName);
-          console.log("File path:", filePath);
-
-          const { error: storageError } = await supabase.storage
-            .from(bucketName)
-            .remove([filePath]);
-
-          if (storageError) {
-            console.error("Storage deletion error:", storageError);
-          } else {
-            console.log("Successfully deleted file from storage:", filePath);
-          }
-        } catch (storageErr) {
-          console.error("Error deleting from storage:", storageErr);
-        }
-      }
-
-      console.log(`Successfully deleted artwork: ${artwork.title}`);
     }
 
     // Finally, delete the subcategory itself
@@ -210,10 +164,16 @@ export async function DELETE(request, { params }) {
       );
     }
 
-    console.log(`Successfully deleted subcategory: ${subcategory.name}`);
+    const successCount = deletionResults.filter((r) => r.success).length;
+    console.log(`✓ Successfully deleted subcategory: ${subcategory.name}`);
+    console.log(
+      `✓ Deleted ${successCount}/${artworkList?.length || 0} artwork items`
+    );
 
     return NextResponse.json({
-      message: `Subcategory "${subcategory.name}" and ${artworkList.length} associated artwork deleted successfully`,
+      message: `Subcategory "${subcategory.name}" and ${successCount} associated artwork deleted successfully`,
+      deletedArtwork: successCount,
+      totalArtwork: artworkList?.length || 0,
     });
   } catch (error) {
     console.error("API error:", error);
@@ -221,5 +181,64 @@ export async function DELETE(request, { params }) {
       { error: "Internal server error" },
       { status: 500 }
     );
+  }
+}
+
+// Helper function to delete artwork (same logic as /api/artworks/[id])
+async function deleteArtwork(artworkId, storagePath) {
+  // Delete from database
+  const { error: deleteError } = await supabase
+    .from("artwork_images")
+    .delete()
+    .eq("id", artworkId);
+
+  if (deleteError) {
+    throw new Error(`Failed to delete from database: ${deleteError.message}`);
+  }
+
+  // Delete from storage if storage_path exists
+  if (storagePath) {
+    try {
+      // Extract the file path from the storage URL
+      const url = new URL(storagePath);
+      const pathParts = url.pathname
+        .split("/")
+        .filter((part) => part.length > 0);
+
+      // Find the bucket name and file path
+      let bucketName = "images";
+      let filePath = "";
+
+      const publicIndex = pathParts.findIndex((part) => part === "public");
+      const signIndex = pathParts.findIndex((part) => part === "sign");
+      const imagesIndex = pathParts.findIndex((part) => part === "images");
+
+      if (publicIndex !== -1 && publicIndex < pathParts.length - 1) {
+        bucketName = pathParts[publicIndex + 1];
+        filePath = pathParts.slice(publicIndex + 2).join("/");
+      } else if (signIndex !== -1 && signIndex < pathParts.length - 1) {
+        bucketName = pathParts[signIndex + 1];
+        filePath = pathParts.slice(signIndex + 2).join("/");
+      } else if (imagesIndex !== -1) {
+        bucketName = "images";
+        filePath = pathParts.slice(imagesIndex + 1).join("/");
+      } else {
+        filePath = pathParts[pathParts.length - 1];
+      }
+
+      const { error: storageError } = await supabase.storage
+        .from(bucketName)
+        .remove([filePath]);
+
+      if (storageError) {
+        console.error("Storage deletion error:", storageError);
+        throw new Error(
+          `Failed to delete from storage: ${storageError.message}`
+        );
+      }
+    } catch (storageErr) {
+      console.error("Error deleting from storage:", storageErr);
+      // Don't throw here - we already deleted from database
+    }
   }
 }

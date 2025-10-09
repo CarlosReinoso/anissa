@@ -35,15 +35,24 @@ export default function ArtworkDashboard() {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm("Are you sure you want to delete this artwork?")) return;
+    if (
+      !confirm(
+        "Are you sure you want to delete this artwork? This will also delete the image file from storage."
+      )
+    )
+      return;
 
     try {
-      const { error } = await supabase
-        .from("artwork_images")
-        .delete()
-        .eq("id", id);
+      // Use the API route which handles both database and storage deletion
+      const response = await fetch(`/api/artworks/${id}`, {
+        method: "DELETE",
+      });
 
-      if (error) throw error;
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to delete artwork");
+      }
+
       await fetchArtwork();
     } catch (error) {
       console.error("Error deleting artwork:", error);

@@ -17,17 +17,51 @@ export default function EditArtwork({ params }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedArtwork, setEditedArtwork] = useState(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [menuItems, setMenuItems] = useState([]);
+  const [subcategories, setSubcategories] = useState([]);
+  const [loadingMenuItems, setLoadingMenuItems] = useState(false);
+  const [loadingSubcategories, setLoadingSubcategories] = useState(false);
+  const [selectedSection, setSelectedSection] = useState("");
   const router = useRouter();
 
   useEffect(() => {
     fetchArtwork();
   }, [unwrappedParams.artworkId]);
 
+  // Fetch menu items when section changes
+  useEffect(() => {
+    if (isEditing && selectedSection) {
+      fetchMenuItems(selectedSection);
+    }
+  }, [isEditing, selectedSection]);
+
+  // Fetch subcategories when menu item changes
+  useEffect(() => {
+    if (isEditing && editedArtwork?.menu_item_id) {
+      fetchSubcategories(editedArtwork.menu_item_id);
+    }
+  }, [isEditing, editedArtwork?.menu_item_id]);
+
   const fetchArtwork = async () => {
     try {
+      // Fetch artwork with related subcategory and menu item data
       const { data, error } = await supabase
         .from("artwork_images")
-        .select("*")
+        .select(
+          `
+          *,
+          subcategory:subcategories!artwork_images_subcategory_id_fkey (
+            id,
+            name,
+            menu_item_id,
+            menu_item:menu_items!subcategories_menu_item_id_fkey (
+              id,
+              name,
+              section
+            )
+          )
+        `
+        )
         .eq("id", unwrappedParams.artworkId)
         .single();
 
@@ -37,12 +71,56 @@ export default function EditArtwork({ params }) {
       setEditedArtwork({
         ...data,
         description: data.description || "",
+        menu_item_id: data.subcategory?.menu_item_id || "",
       });
+      setSelectedSection(
+        data.subcategory?.menu_item?.section || data.section || "graphics"
+      );
     } catch (error) {
       console.error("Error fetching artwork:", error);
       setError(error.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchMenuItems = async (section) => {
+    try {
+      setLoadingMenuItems(true);
+      const response = await fetch(`/api/menu-items?section=${section}`);
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to fetch menu items");
+      }
+
+      setMenuItems(result.data);
+    } catch (err) {
+      console.error("Error fetching menu items:", err);
+      setError(err.message);
+    } finally {
+      setLoadingMenuItems(false);
+    }
+  };
+
+  const fetchSubcategories = async (menuItemId) => {
+    try {
+      setLoadingSubcategories(true);
+      const response = await fetch(
+        `/api/subcategories?menu_item_id=${menuItemId}`
+      );
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to fetch subcategories");
+      }
+
+      setSubcategories(result.data);
+    } catch (err) {
+      console.error("Error fetching subcategories:", err);
+      setError(err.message);
+    } finally {
+      setLoadingSubcategories(false);
     }
   };
 
@@ -54,11 +132,16 @@ export default function EditArtwork({ params }) {
     try {
       setLoading(true);
 
+      // Check if subcategory is selected
+      if (!editedArtwork.subcategory_id) {
+        throw new Error("Please select a subcategory");
+      }
+
       // Check if title changed and generate new slug if needed
       let updateData = {
         title: editedArtwork.title,
         description: editedArtwork.description,
-        category: editedArtwork.category,
+        subcategory_id: editedArtwork.subcategory_id,
       };
 
       // If title changed, generate new slug
@@ -88,7 +171,8 @@ export default function EditArtwork({ params }) {
 
       if (error) throw error;
 
-      setArtwork({ ...artwork, ...editedArtwork, ...updateData });
+      // Refresh artwork data to get updated relationships
+      await fetchArtwork();
       setIsEditing(false);
     } catch (error) {
       console.error("Error updating artwork:", error);
@@ -227,20 +311,93 @@ export default function EditArtwork({ params }) {
 
           <div>
             <label className="block text-sm font-medium text-white mb-2">
-              Category *
+              Section *
             </label>
             <select
               required
-              value={editedArtwork.category}
-              onChange={(e) =>
-                setEditedArtwork({ ...editedArtwork, category: e.target.value })
-              }
+              value={selectedSection}
+              onChange={(e) => {
+                setSelectedSection(e.target.value);
+                setEditedArtwork({
+                  ...editedArtwork,
+                  menu_item_id: "",
+                  subcategory_id: "",
+                });
+              }}
               className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-secondary"
             >
               <option value="graphics">Graphics</option>
               <option value="tattoos">Tattoos</option>
             </select>
           </div>
+
+          <div>
+            <label className="block text-sm font-medium text-white mb-2">
+              Menu Item (Submenu) *
+            </label>
+            {loadingMenuItems ? (
+              <div className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white flex items-center">
+                <LoadingSpinner size="sm" className="mr-2" />
+                <span className="text-gray-400">Loading menu items...</span>
+              </div>
+            ) : (
+              <select
+                required
+                value={editedArtwork.menu_item_id}
+                onChange={(e) =>
+                  setEditedArtwork({
+                    ...editedArtwork,
+                    menu_item_id: e.target.value,
+                    subcategory_id: "",
+                  })
+                }
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-secondary"
+              >
+                <option value="">Select a menu item</option>
+                {menuItems.map((menuItem) => (
+                  <option key={menuItem.id} value={menuItem.id}>
+                    {menuItem.name}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          {editedArtwork.menu_item_id && (
+            <div>
+              <label className="block text-sm font-medium text-white mb-2">
+                Subcategory *
+              </label>
+              {loadingSubcategories ? (
+                <div className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white flex items-center">
+                  <LoadingSpinner size="sm" className="mr-2" />
+                  <span className="text-gray-400">
+                    Loading subcategories...
+                  </span>
+                </div>
+              ) : (
+                <select
+                  required
+                  value={editedArtwork.subcategory_id}
+                  onChange={(e) =>
+                    setEditedArtwork({
+                      ...editedArtwork,
+                      subcategory_id: e.target.value,
+                    })
+                  }
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-secondary"
+                >
+                  <option value="">Select a subcategory</option>
+                  {subcategories.map((subcategory) => (
+                    <option key={subcategory.id} value={subcategory.id}>
+                      {subcategory.name.charAt(0).toUpperCase() +
+                        subcategory.name.slice(1)}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+          )}
 
           <div className="flex space-x-4">
             <Button
@@ -275,17 +432,30 @@ export default function EditArtwork({ params }) {
                   <span className="font-medium">Title:</span> {artwork.title}
                 </p>
                 <p>
-                  <span className="font-medium">Category:</span>
+                  <span className="font-medium">Section:</span>
                   <span
                     className={`ml-2 px-2 py-1 text-xs rounded-full ${
-                      artwork.category === "graphics"
+                      artwork.subcategory?.menu_item?.section === "graphics"
                         ? "bg-blue-600 text-white"
                         : "bg-purple-600 text-white"
                     }`}
                   >
-                    {artwork.category}
+                    {artwork.subcategory?.menu_item?.section || artwork.section}
                   </span>
                 </p>
+                {artwork.subcategory && (
+                  <>
+                    <p>
+                      <span className="font-medium">Menu Item:</span>{" "}
+                      {artwork.subcategory.menu_item?.name}
+                    </p>
+                    <p>
+                      <span className="font-medium">Subcategory:</span>{" "}
+                      {artwork.subcategory.name.charAt(0).toUpperCase() +
+                        artwork.subcategory.name.slice(1)}
+                    </p>
+                  </>
+                )}
                 <p>
                   <span className="font-medium">Created:</span>{" "}
                   {new Date(artwork.created_at).toLocaleDateString()}

@@ -1,12 +1,32 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import Button from "@/components/Button";
 import Carousel from "@/components/Carousel";
 
 export default function TattoosSection() {
-  const tattoosImages = [
-    "/placeholder.png",
-    "/placeholder.png",
-    "/placeholder.png",
-  ];
+  const [tattoosImages, setTattoosImages] = useState(["/placeholder.png"]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchTattoosCarousel();
+  }, []);
+
+  const fetchTattoosCarousel = async () => {
+    try {
+      const response = await fetch("/api/homepage-carousel?section=tattoos");
+      const data = await response.json();
+
+      if (response.ok && data.data && data.data.length > 0) {
+        const images = data.data.map((item) => item.artwork.storage_path);
+        setTattoosImages(images);
+      }
+    } catch (error) {
+      console.error("Error fetching tattoos carousel:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <section className="py-20 bg-white">
@@ -14,7 +34,13 @@ export default function TattoosSection() {
         <div className="grid md:grid-cols-2 gap-12 items-center">
           {/* Left - Carousel */}
           <div className="relative h-[500px] md:h-[600px]">
-            <Carousel images={tattoosImages} alt="Tattoo designs" />
+            {loading ? (
+              <div className="flex items-center justify-center h-full">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
+              </div>
+            ) : (
+              <Carousel images={tattoosImages} alt="Tattoo designs" />
+            )}
           </div>
 
           {/* Right - Info */}

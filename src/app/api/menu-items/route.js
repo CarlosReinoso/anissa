@@ -1,16 +1,16 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/config/supabase";
+import { generateSlug } from "@/utils/slug";
 
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const section = searchParams.get("section");
-    const name = searchParams.get("name");
-    const menu_item_id = searchParams.get("menu_item_id");
+    const includeSubcategories = searchParams.get("includeSubcategories") === "true";
 
     let query = supabase
-      .from("subcategories")
-      .select("id, name, sort_order, menu_item_id")
+      .from("menu_items")
+      .select("*")
       .order("sort_order", { ascending: true })
       .order("name", { ascending: true });
 
@@ -18,25 +18,38 @@ export async function GET(request) {
       query = query.eq("section", section);
     }
 
-    if (name) {
-      query = query.eq("name", name.toLowerCase());
-    }
-
-    if (menu_item_id) {
-      query = query.eq("menu_item_id", menu_item_id);
-    }
-
     const { data, error } = await query;
 
     if (error) {
       console.error("Database error:", error);
       return NextResponse.json(
-        { error: "Failed to fetch subcategories" },
+        { error: "Failed to fetch menu items" },
         { status: 500 }
       );
     }
 
-    // Always return full data objects
+    // If requested, include subcategories for each menu item
+    if (includeSubcategories && data) {
+      const menuItemsWithSubcategories = await Promise.all(
+        data.map(async (menuItem) => {
+          const { data: subcategories, error: subError } = await supabase
+            .from("subcategories")
+            .select("*")
+            .eq("menu_item_id", menuItem.id)
+            .order("sort_order", { ascending: true });
+
+          if (subError) {
+            console.error("Error fetching subcategories:", subError);
+            return { ...menuItem, subcategories: [] };
+          }
+
+          return { ...menuItem, subcategories: subcategories || [] };
+        })
+      );
+
+      return NextResponse.json({ data: menuItemsWithSubcategories });
+    }
+
     return NextResponse.json({ data });
   } catch (error) {
     console.error("API error:", error);
@@ -50,7 +63,7 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { name, section, menu_item_id } = body;
+    const { name, section, description } = body;
 
     // Validate required fields
     if (!name || !section) {
@@ -68,36 +81,32 @@ export async function POST(request) {
       );
     }
 
-    // Get the current max sort_order for this section (or menu_item if provided)
-    let sortQuery = supabase
-      .from("subcategories")
+    // Generate slug from name
+    const slug = generateSlug(name);
+
+    // Get the current max sort_order for this section
+    const { data: maxSortData } = await supabase
+      .from("menu_items")
       .select("sort_order")
       .eq("section", section)
       .order("sort_order", { ascending: false })
       .limit(1);
 
-    if (menu_item_id) {
-      sortQuery = sortQuery.eq("menu_item_id", menu_item_id);
-    }
-
-    const { data: maxSortData } = await sortQuery;
     const nextSortOrder = maxSortData && maxSortData[0] 
       ? maxSortData[0].sort_order + 1 
       : 0;
 
-    const insertData = {
-      name: name.toLowerCase(),
-      section,
-      sort_order: nextSortOrder,
-    };
-
-    if (menu_item_id) {
-      insertData.menu_item_id = menu_item_id;
-    }
-
     const { data, error } = await supabase
-      .from("subcategories")
-      .insert([insertData])
+      .from("menu_items")
+      .insert([
+        {
+          name,
+          slug,
+          section,
+          description,
+          sort_order: nextSortOrder,
+        },
+      ])
       .select()
       .single();
 
@@ -105,13 +114,13 @@ export async function POST(request) {
       if (error.code === "23505") {
         // Unique constraint violation
         return NextResponse.json(
-          { error: "Subcategory already exists" },
+          { error: "Menu item with this name already exists in this section" },
           { status: 409 }
         );
       }
       console.error("Database error:", error);
       return NextResponse.json(
-        { error: "Failed to create subcategory" },
+        { error: "Failed to create menu item" },
         { status: 500 }
       );
     }
@@ -139,7 +148,7 @@ export async function PUT(request) {
       );
     }
 
-    // Update sort orders for each subcategory
+    // Update sort orders for each menu item
     for (const update of updates) {
       const { id, sort_order } = update;
 
@@ -151,21 +160,21 @@ export async function PUT(request) {
       }
 
       const { error } = await supabase
-        .from("subcategories")
+        .from("menu_items")
         .update({ sort_order })
         .eq("id", id);
 
       if (error) {
         console.error("Database error:", error);
         return NextResponse.json(
-          { error: "Failed to update subcategory order" },
+          { error: "Failed to update menu item order" },
           { status: 500 }
         );
       }
     }
 
     return NextResponse.json({
-      message: "Subcategories reordered successfully",
+      message: "Menu items reordered successfully",
     });
   } catch (error) {
     console.error("API error:", error);
@@ -175,3 +184,4 @@ export async function PUT(request) {
     );
   }
 }
+

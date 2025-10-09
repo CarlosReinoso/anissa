@@ -16,7 +16,7 @@ export async function GET(request) {
       .select(
         countOnly
           ? "count"
-          : "id, slug, title, description, storage_path, category, sub_category, sort_order, created_at"
+          : "id, slug, title, description, storage_path, category, sub_category, section, sort_order, created_at"
       )
       .eq("published", true);
 

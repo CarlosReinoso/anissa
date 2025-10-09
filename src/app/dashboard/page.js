@@ -146,7 +146,21 @@ export default function DashboardPage() {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-gray-800 rounded-lg p-6">
+            <h2 className="text-xl font-semibold mb-4">Homepage Carousel</h2>
+            <p className="text-gray-400 mb-4">
+              Manage the featured artwork displayed in the homepage carousels
+              for both Graphics and Tattoos sections.
+            </p>
+            <Button
+              onClick={() => router.push("/dashboard/homepage")}
+              className="bg-secondary hover:bg-secondary/80"
+            >
+              Manage Homepage
+            </Button>
+          </div>
+
           <div className="bg-gray-800 rounded-lg p-6">
             <h2 className="text-xl font-semibold mb-4">Graphics Management</h2>
             <p className="text-gray-400 mb-4">

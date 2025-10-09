@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 
-export default function Logo({ isScrolled, onClick }) {
+export default function Logo({ isScrolled, onClick, inMobileMenu = false }) {
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -24,7 +24,7 @@ export default function Logo({ isScrolled, onClick }) {
   return (
     <div
       className={`flex-1 flex justify-center md:justify-center ${
-        isScrolled && isMobile ? "mt-0" : "mt-8"
+        isScrolled && isMobile ? "mt-2" : "mt-0"
       } md:mt-0`}
     >
       <Link
@@ -37,7 +37,9 @@ export default function Logo({ isScrolled, onClick }) {
           alt="logo"
           width={logoSize}
           height={logoSize}
-          className="transition-all duration-300 "
+          className={`transition-all duration-300 ${
+            inMobileMenu ? "translate-y-0.5 invert brightness-[0.87]" : ""
+          }`}
         />
       </Link>
     </div>
