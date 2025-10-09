@@ -82,8 +82,41 @@ const Sidebar = () => {
 
   const navLinks = [
     {
+      href: "/dashboard",
+      label: "Overview",
+      icon: (
+        <Icon>
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+          <circle cx="8.5" cy="8.5" r="1.5" />
+          <polyline points="21,15 16,10 5,21" />
+        </Icon>
+      ),
+    },
+    {
+      href: "/dashboard/graphics",
+      label: "Graphics",
+      icon: (
+        <Icon>
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+          <circle cx="8.5" cy="8.5" r="1.5" />
+          <polyline points="21,15 16,10 5,21" />
+        </Icon>
+      ),
+    },
+    {
+      href: "/dashboard/tattoos",
+      label: "Tattoos",
+      icon: (
+        <Icon>
+          <path d="M12 2L2 7l10 5 10-5-10-5z" />
+          <path d="M2 17l10 5 10-5" />
+          <path d="M2 12l10 5 10-5" />
+        </Icon>
+      ),
+    },
+    {
       href: "/dashboard/artwork",
-      label: "Artwork",
+      label: "All Artwork",
       icon: (
         <Icon>
           <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />

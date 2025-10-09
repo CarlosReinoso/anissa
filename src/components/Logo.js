@@ -19,7 +19,7 @@ export default function Logo({ isScrolled, onClick }) {
   }, []);
 
   // Smaller logo when scrolled
-  const logoSize = isScrolled ? (isMobile ? 40 : 60) : isMobile ? 80 : 120;
+  const logoSize = isScrolled ? (isMobile ? 40 : 60) : isMobile ? 80 : 100;
 
   return (
     <div
@@ -37,7 +37,7 @@ export default function Logo({ isScrolled, onClick }) {
           alt="logo"
           width={logoSize}
           height={logoSize}
-          className="transition-all duration-300 md:translate-y-0 translate-y-0.5 invert brightness-[0.87]"
+          className="transition-all duration-300 "
         />
       </Link>
     </div>

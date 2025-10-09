@@ -87,7 +87,7 @@ export default function ArtworkGrid({ category = "all", limit = null }) {
         >
           <div className="aspect-square relative">
             <Image
-              src={item.image_url}
+              src={item.storage_path}
               alt={item.title}
               fill
               className="object-cover transition-transform duration-300 group-hover:scale-105"

@@ -2,181 +2,211 @@
 import Image from "next/image";
 import Button from "./Button";
 import { motion } from "framer-motion";
+import { ARTIST_INFO } from "@/constants";
 
 export default function Hero() {
   return (
     <>
       <section className="relative h-screen flex items-center justify-center overflow-hidden">
-        {/* Mobile Image - Full width */}
+        {/* Hero Image */}
         <Image
-          src="/hero-mobile.jpg"
-          alt="Embody Perthshire - Specialist Neurological Physiotherapy"
+          src="/hero.png"
+          alt="Anissa Aouar - Freelance Illustrator & Tattoo Artist"
           fill
           style={{ objectFit: "cover", zIndex: 0 }}
           priority
-          className="md:hidden"
+          className="object-cover"
         />
-        {/* Desktop Image - Positioned more to the right */}
-        <div className="hidden md:block absolute inset-0 z-0">
-          <Image
-            src="/hero-desktop.jpg"
-            alt="Embody Perthshire - Specialist Neurological Physiotherapy"
-            fill
-            style={{ objectFit: "cover", transform: "translateX(20%)" }}
-            priority
-          />
-        </div>
 
-        {/* Pink overlay for desktop - left side only */}
-        <div
-          className="hidden md:block absolute inset-0 z-5"
-          style={{
-            backgroundImage: `linear-gradient(to right, rgba(229, 170, 188, 1) 20%, rgba(229, 170, 188, 0.7) 30%, rgba(229, 170, 188, 0.4) 60%, transparent 80%)`,
-          }}
-        ></div>
+        {/* Enhanced overlay for better text readability with image colors */}
+        <div className="absolute inset-0 bg-gradient-to-b from-indigo-900/50 via-purple-900/30 to-pink-900/40 z-5"></div>
+
+        {/* Additional dark overlay for text contrast */}
+        <div className="absolute inset-0 bg-black/30 z-6"></div>
 
         {/* Animated background patterns */}
         <div className="absolute inset-0 z-1 overflow-hidden">
-          {/* Floating circles */}
+          {/* Floating artistic elements */}
           <motion.div
             animate={{
               y: [0, -20, 0],
               x: [0, 10, 0],
-            }}
-            transition={{
-              duration: 6,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-            className="absolute top-20 right-20 w-4 h-4 bg-white/20 rounded-full blur-sm"
-          />
-          <motion.div
-            animate={{
-              y: [0, -15, 0],
-              x: [0, -15, 0],
+              rotate: [0, 5, 0],
             }}
             transition={{
               duration: 8,
               repeat: Infinity,
               ease: "easeInOut",
-              delay: 2,
             }}
-            className="absolute top-40 right-40 w-6 h-6 bg-primary/30 rounded-full blur-sm"
+            className="absolute top-20 right-20 w-3 h-3 bg-white/10 rounded-full blur-sm"
           />
           <motion.div
             animate={{
-              y: [0, -25, 0],
-              x: [0, 20, 0],
+              y: [0, -15, 0],
+              x: [0, -15, 0],
+              rotate: [0, -3, 0],
             }}
             transition={{
               duration: 10,
               repeat: Infinity,
               ease: "easeInOut",
+              delay: 2,
+            }}
+            className="absolute top-40 right-40 w-4 h-4 bg-white/15 rounded-full blur-sm"
+          />
+          <motion.div
+            animate={{
+              y: [0, -25, 0],
+              x: [0, 20, 0],
+              rotate: [0, 8, 0],
+            }}
+            transition={{
+              duration: 12,
+              repeat: Infinity,
+              ease: "easeInOut",
               delay: 4,
             }}
-            className="absolute top-60 right-60 w-3 h-3 bg-third/40 rounded-full blur-sm"
+            className="absolute top-60 right-60 w-2 h-2 bg-white/20 rounded-full blur-sm"
           />
         </div>
 
         {/* Content container */}
-        <div className="absolute inset-0 flex flex-col items-start justify-center text-left p-4 md:p-8 lg:p-12 z-10">
-          {/* Mobile overlay */}
-          <div
-            className="md:hidden absolute inset-0 z-5"
-            style={{
-              backgroundImage: `linear-gradient(to right, rgba(229, 170, 188, 0.8) 0%, rgba(229, 170, 188, 0.6) 30%, rgba(229, 170, 188, 0.3) 60%, transparent 80%)`,
-            }}
-          ></div>
-
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4 md:p-8 lg:p-12 z-10">
           {/* Main heading with enhanced styling */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-            className="relative max-w-2xl z-10"
+            transition={{ duration: 1, ease: "easeOut" }}
+            className="relative max-w-4xl z-10"
           >
-            {/* Enhanced subtitle with gradient and animation */}
-            <motion.h2
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
-              className="text-lg md:text-xl lg:text-2xl font-medium mb-4 md:mb-6 relative"
+            {/* Artist name */}
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+              className="text-5xl md:text-7xl lg:text-8xl font-bold mb-4 md:mb-6 font-playfair"
+              style={{
+                color: "#ffffff",
+                textShadow:
+                  "0 0 20px rgba(255,255,255,0.8), 0 0 40px rgba(255,255,255,0.4), 0 4px 8px rgba(0,0,0,0.8)",
+                filter: "drop-shadow(0 0 10px rgba(255,255,255,0.3))",
+              }}
             >
-              <h2 className="text-gray-700 mt-2 drop-shadow-lg font-medium bg-white/60 px-4 py-2 rounded w-fit">
-                Specialist Neurological Physiotherapy & Fitness
-              </h2>
-              {/* Animated underline */}
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: "100%" }}
-                transition={{ duration: 1, delay: 0.8 }}
-                className="h-0.5 bg-gradient-to-r from-white to-third mt-2"
-              />
-            </motion.h2>
-          </motion.div>
+              {ARTIST_INFO.name}
+            </motion.h1>
 
-          {/* Enhanced description with better typography */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
-          >
-            <h4 className="text-white/95 max-w-lg md:max-w-xl leading-relaxed  ml-2 mb-6 md:mb-8 z-10 drop-shadow-lg">
-              For lasting strength, balance, and confidence
-            </h4>
+            {/* Title with elegant styling */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
+              className="mb-6 md:mb-8"
+            >
+              <h2
+                className="text-xl md:text-2xl lg:text-3xl font-medium font-figtree"
+                style={{
+                  color: "#fbbf24",
+                  textShadow:
+                    "0 0 15px rgba(251,191,36,0.6), 0 2px 4px rgba(0,0,0,0.8)",
+                  filter: "drop-shadow(0 0 8px rgba(251,191,36,0.4))",
+                }}
+              >
+                {ARTIST_INFO.title}
+              </h2>
+              <div className="flex items-center justify-center mt-2">
+                <div
+                  className="w-16 h-px"
+                  style={{ backgroundColor: "rgba(251,191,36,0.6)" }}
+                ></div>
+                <span
+                  className="mx-4 text-sm md:text-base"
+                  style={{ color: "rgba(251,191,36,0.8)" }}
+                >
+                  •
+                </span>
+                <div
+                  className="w-16 h-px"
+                  style={{ backgroundColor: "rgba(251,191,36,0.6)" }}
+                ></div>
+              </div>
+              <p
+                className="text-lg md:text-xl mt-2 font-figtree"
+                style={{
+                  color: "#f3e8ff",
+                  textShadow:
+                    "0 0 10px rgba(243,232,255,0.5), 0 2px 4px rgba(0,0,0,0.8)",
+                }}
+              >
+                in Marseille
+              </p>
+            </motion.div>
+
+            {/* Animated underline */}
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: "100%" }}
+              transition={{ duration: 1.2, delay: 0.8 }}
+              className="h-0.5 my-4"
+              style={{
+                background:
+                  "linear-gradient(to right, transparent, #fbbf24, #ec4899, #fbbf24, transparent)",
+                boxShadow: "0 0 10px rgba(251,191,36,0.5)",
+              }}
+            />
           </motion.div>
 
           {/* Enhanced button section */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.6, ease: "easeOut" }}
-            className="z-10 flex flex-col sm:flex-row gap-4 items-start"
+            transition={{ duration: 0.8, delay: 0.8, ease: "easeOut" }}
+            className="z-10 flex flex-col sm:flex-row gap-4 items-center"
           >
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.04, ease: "easeOut" }}
+              transition={{ duration: 0.7, delay: 1, ease: "easeOut" }}
               className="z-10"
             >
-              <Button variant="secondary" href="/contact">
-                Book Your First Session
+              <Button variant="gold" href="/graphics">
+                View Graphics
               </Button>
             </motion.div>
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.2, ease: "easeOut" }}
+              transition={{ duration: 0.7, delay: 1.1, ease: "easeOut" }}
               className="z-10"
             >
-              <Button variant="outline" href="/about">
-                Learn More
+              <Button variant="pink" href="/tattoos">
+                View Tattoos
               </Button>
             </motion.div>
           </motion.div>
         </div>
+
+        {/* Enhanced scroll indicator */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.5 }}
+          className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10"
+        >
+          <div className="w-6 h-10 border-2 border-yellow-400/60 rounded-full flex justify-center">
+            <motion.div
+              animate={{
+                y: [0, 12, 0],
+              }}
+              transition={{
+                duration: 1.5,
+                repeat: Infinity,
+                repeatType: "loop",
+              }}
+              className="w-1 h-2 bg-yellow-400/80 rounded-full mt-2"
+            />
+          </div>
+        </motion.div>
       </section>
-      {/* Enhanced scroll indicator */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1 }}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10"
-      >
-        <div className="w-6 h-10 border-2 border-third rounded-full flex justify-center">
-          <motion.div
-            animate={{
-              y: [0, 12, 0],
-            }}
-            transition={{
-              duration: 1.5,
-              repeat: Infinity,
-              repeatType: "loop",
-            }}
-            className="w-1 h-2 bg-third rounded-full mt-2"
-          />
-        </div>
-      </motion.div>
     </>
   );
 }

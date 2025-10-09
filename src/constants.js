@@ -3,6 +3,14 @@ export const EMAIL_ADDRESS = "hello@anissaaouar.com";
 
 export const isProd = process.env.NODE_ENV === "production";
 
+// Font size constants for navigation
+export const NAV_FONT_SIZES = {
+  main: "text-xl", // Larger main menu items
+  submenu: "text-lg", // Larger submenu items
+  mobile: "text-2xl", // Mobile main menu items
+  mobileSubmenu: "text-xl", // Mobile submenu items
+};
+
 export const NAV_ITEMS = [
   {
     href: "/graphics",
@@ -17,6 +25,18 @@ export const NAV_ITEMS = [
     label: "About",
   },
 ];
+
+export const SUBMENU_ITEMS = {
+  graphics: [
+    { href: "/graphics", label: "Graphics" },
+    { href: "/sketches", label: "Sketches" },
+    { href: "/line-drawings", label: "Line Drawings" },
+  ],
+  tattoos: [
+    { href: "/tattoos", label: "Tattoos" },
+    { href: "/flash-sheets", label: "Flash Sheets" },
+  ],
+};
 
 export const ARTIST_INFO = {
   name: "Anissa Aouar",

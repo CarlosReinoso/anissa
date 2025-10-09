@@ -1,10 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/config/supabase";
 import Button from "@/components/Button";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import { generateUniqueSlug } from "@/utils/slug";
+import {
+  compressImageIfNeeded,
+  compressImagesIfNeeded,
+} from "@/utils/imageCompression";
 
 export default function NewArtwork() {
   const [loading, setLoading] = useState(false);
@@ -16,31 +21,131 @@ export default function NewArtwork() {
     title: "",
     description: "",
     category: "graphics",
+    sub_category: "",
   });
 
   const [selectedImage, setSelectedImage] = useState(null);
+  const [selectedImages, setSelectedImages] = useState([]);
+  const [subcategories, setSubcategories] = useState([]);
+  const [loadingSubcategories, setLoadingSubcategories] = useState(false);
+  const [bulkMode, setBulkMode] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState({});
+
+  // Fetch subcategories when category changes
+  useEffect(() => {
+    if (newArtwork.category) {
+      fetchSubcategories(newArtwork.category);
+    }
+  }, [newArtwork.category]);
+
+  const fetchSubcategories = async (section) => {
+    try {
+      setLoadingSubcategories(true);
+      const response = await fetch(`/api/subcategories?section=${section}`);
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to fetch subcategories");
+      }
+
+      setSubcategories(result.data);
+      // Reset subcategory selection when category changes
+      setNewArtwork((prev) => ({ ...prev, sub_category: "" }));
+    } catch (err) {
+      console.error("Error fetching subcategories:", err);
+      setError(err.message);
+    } finally {
+      setLoadingSubcategories(false);
+    }
+  };
+
+  // Generate title from filename
+  const generateTitleFromFilename = (filename) => {
+    // Remove file extension
+    const nameWithoutExt = filename.replace(/\.[^/.]+$/, "");
+    // Replace underscores and hyphens with spaces
+    const title = nameWithoutExt.replace(/[_-]/g, " ");
+    // Capitalize first letter of each word
+    return title
+      .split(" ")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(" ");
+  };
 
   const handleImageUpload = async (event) => {
     try {
       setUploadingImage(true);
-      const file = event.target.files[0];
-      if (!file) return;
+      const files = Array.from(event.target.files);
+      if (!files.length) return;
 
-      // Upload image to Supabase Storage
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${Math.random()}.${fileExt}`;
-      const { error: uploadError } = await supabase.storage
-        .from("images")
-        .upload(fileName, file);
+      if (bulkMode) {
+        // Handle bulk upload
+        const uploadedImages = [];
 
-      if (uploadError) throw uploadError;
+        // Compress images if needed
+        const compressedFiles = await compressImagesIfNeeded(files);
 
-      // Get the public URL
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("images").getPublicUrl(fileName);
+        for (let i = 0; i < compressedFiles.length; i++) {
+          const file = compressedFiles[i];
+          setUploadProgress((prev) => ({
+            ...prev,
+            [file.name]: { current: i + 1, total: compressedFiles.length },
+          }));
 
-      setSelectedImage(publicUrl);
+          // Upload image to Supabase Storage
+          const fileExt = file.name.split(".").pop();
+          const fileName = `${Math.random()}.${fileExt}`;
+          const { error: uploadError } = await supabase.storage
+            .from("images")
+            .upload(fileName, file);
+
+          if (uploadError) throw uploadError;
+
+          // Get the public URL
+          const {
+            data: { publicUrl },
+          } = supabase.storage.from("images").getPublicUrl(fileName);
+
+          uploadedImages.push({
+            file: file,
+            url: publicUrl,
+            title: generateTitleFromFilename(file.name),
+          });
+        }
+
+        setSelectedImages(uploadedImages);
+        setUploadProgress({});
+      } else {
+        // Handle single upload
+        const file = files[0];
+
+        // Compress image if needed
+        const compressedFile = await compressImageIfNeeded(file);
+
+        // Upload image to Supabase Storage
+        const fileExt = compressedFile.name.split(".").pop();
+        const fileName = `${Math.random()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from("images")
+          .upload(fileName, compressedFile);
+
+        if (uploadError) throw uploadError;
+
+        // Get the public URL
+        const {
+          data: { publicUrl },
+        } = supabase.storage.from("images").getPublicUrl(fileName);
+
+        setSelectedImage(publicUrl);
+
+        // Auto-fill title from filename
+        if (!newArtwork.title) {
+          setNewArtwork((prev) => ({
+            ...prev,
+            title: generateTitleFromFilename(compressedFile.name),
+          }));
+        }
+      }
     } catch (error) {
       console.error("Error uploading image:", error);
       setError(error.message);
@@ -55,21 +160,80 @@ export default function NewArtwork() {
     setError(null);
 
     try {
-      if (!selectedImage) {
-        throw new Error("Please upload an image");
+      if (bulkMode) {
+        if (selectedImages.length === 0) {
+          throw new Error("Please upload images");
+        }
+      } else {
+        if (!selectedImage) {
+          throw new Error("Please upload an image");
+        }
       }
 
-      // Create the artwork entry
-      const { error } = await supabase.from("artwork_images").insert({
-        title: newArtwork.title,
-        description: newArtwork.description,
-        image_url: selectedImage,
-        category: newArtwork.category,
-      });
+      if (!newArtwork.sub_category) {
+        throw new Error("Please select a subcategory");
+      }
 
-      if (error) throw error;
+      // Function to check if slug exists
+      const checkSlugExists = async (slug) => {
+        const { data, error } = await supabase
+          .from("artwork_images")
+          .select("id")
+          .eq("slug", slug)
+          .single();
 
-      router.push("/dashboard/artwork");
+        // If we get data, the slug exists
+        return !!data;
+      };
+
+      if (bulkMode) {
+        // Handle bulk submission
+        const artworkEntries = [];
+
+        for (const imageData of selectedImages) {
+          const slug = await generateUniqueSlug(
+            imageData.title,
+            checkSlugExists
+          );
+
+          artworkEntries.push({
+            title: imageData.title,
+            description: newArtwork.description,
+            storage_path: imageData.url,
+            category: newArtwork.category,
+            sub_category: newArtwork.sub_category,
+            slug: slug,
+          });
+        }
+
+        // Insert all artwork entries
+        const { error } = await supabase
+          .from("artwork_images")
+          .insert(artworkEntries);
+        if (error) throw error;
+
+        router.push("/dashboard/artwork");
+      } else {
+        // Handle single submission
+        const slug = await generateUniqueSlug(
+          newArtwork.title,
+          checkSlugExists
+        );
+
+        // Create the artwork entry
+        const { error } = await supabase.from("artwork_images").insert({
+          title: newArtwork.title,
+          description: newArtwork.description,
+          storage_path: selectedImage,
+          category: newArtwork.category,
+          sub_category: newArtwork.sub_category,
+          slug: slug,
+        });
+
+        if (error) throw error;
+
+        router.push("/dashboard/artwork");
+      }
     } catch (error) {
       console.error("Error creating artwork:", error);
       setError(error.message);
@@ -81,10 +245,40 @@ export default function NewArtwork() {
   return (
     <div className="max-w-2xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-white mb-2">Add New Artwork</h1>
-        <p className="text-gray-400">
-          Upload a new illustration or tattoo design
-        </p>
+        <div className="flex justify-between items-center mb-4">
+          <div>
+            <h1 className="text-3xl font-bold text-white mb-2">
+              Add New Artwork
+            </h1>
+            <p className="text-gray-400">
+              {bulkMode
+                ? "Upload multiple illustrations or tattoo designs"
+                : "Upload a new illustration or tattoo design"}
+            </p>
+          </div>
+          <div className="flex items-center space-x-2">
+            <label className="text-sm text-gray-400">Single</label>
+            <button
+              type="button"
+              onClick={() => {
+                setBulkMode(!bulkMode);
+                setSelectedImage(null);
+                setSelectedImages([]);
+                setNewArtwork((prev) => ({ ...prev, title: "" }));
+              }}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                bulkMode ? "bg-secondary" : "bg-gray-600"
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  bulkMode ? "translate-x-6" : "translate-x-1"
+                }`}
+              />
+            </button>
+            <label className="text-sm text-gray-400">Bulk</label>
+          </div>
+        </div>
       </div>
 
       {error && (
@@ -96,18 +290,72 @@ export default function NewArtwork() {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
           <label className="block text-sm font-medium text-white mb-2">
-            Title *
+            {bulkMode ? "Images *" : "Image *"}
           </label>
-          <input
-            type="text"
-            required
-            value={newArtwork.title}
-            onChange={(e) =>
-              setNewArtwork({ ...newArtwork, title: e.target.value })
-            }
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-secondary"
-            placeholder="Enter artwork title"
-          />
+          <div className="space-y-4">
+            <input
+              type="file"
+              accept="image/*"
+              multiple={bulkMode}
+              onChange={handleImageUpload}
+              disabled={uploadingImage}
+              className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-secondary"
+            />
+            {uploadingImage && (
+              <div className="flex items-center space-x-2 text-sm text-gray-400">
+                <LoadingSpinner size="sm" />
+                <span>
+                  {bulkMode ? "Uploading images..." : "Uploading image..."}
+                </span>
+              </div>
+            )}
+
+            {/* Show upload progress for bulk mode */}
+            {bulkMode && Object.keys(uploadProgress).length > 0 && (
+              <div className="space-y-2">
+                {Object.entries(uploadProgress).map(([filename, progress]) => (
+                  <div key={filename} className="text-sm text-gray-400">
+                    {filename}: {progress.current}/{progress.total}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Single image preview */}
+          {!bulkMode && selectedImage && (
+            <div className="mt-4">
+              <p className="text-sm text-gray-400 mb-2">Preview:</p>
+              <img
+                src={selectedImage}
+                alt="Preview"
+                className="w-full h-48 object-cover rounded border border-gray-600"
+              />
+            </div>
+          )}
+
+          {/* Bulk images preview */}
+          {bulkMode && selectedImages.length > 0 && (
+            <div className="mt-4">
+              <p className="text-sm text-gray-400 mb-2">
+                Preview ({selectedImages.length} images):
+              </p>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {selectedImages.map((imageData, index) => (
+                  <div key={index} className="relative">
+                    <img
+                      src={imageData.url}
+                      alt={imageData.title}
+                      className="w-full h-32 object-cover rounded border border-gray-600"
+                    />
+                    <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-xs p-2 rounded-b">
+                      {imageData.title}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div>
@@ -142,49 +390,79 @@ export default function NewArtwork() {
           </select>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-white mb-2">
-            Image *
-          </label>
-          <div className="space-y-4">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageUpload}
-              disabled={uploadingImage}
-              className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-secondary"
-            />
-            {uploadingImage && (
-              <div className="flex items-center space-x-2 text-sm text-gray-400">
-                <LoadingSpinner size="sm" />
-                <span>Uploading image...</span>
+        {newArtwork.category && (
+          <div>
+            <label className="block text-sm font-medium text-white mb-2">
+              Subcategory *
+            </label>
+            {loadingSubcategories ? (
+              <div className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white flex items-center">
+                <LoadingSpinner size="sm" className="mr-2" />
+                <span className="text-gray-400">Loading subcategories...</span>
               </div>
+            ) : (
+              <select
+                required
+                value={newArtwork.sub_category}
+                onChange={(e) =>
+                  setNewArtwork({ ...newArtwork, sub_category: e.target.value })
+                }
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-secondary"
+              >
+                <option value="">Select a subcategory</option>
+                {subcategories.map((subcategory) => (
+                  <option key={subcategory.id} value={subcategory.name}>
+                    {subcategory.name.charAt(0).toUpperCase() +
+                      subcategory.name.slice(1)}
+                  </option>
+                ))}
+              </select>
+            )}
+            {subcategories.length === 0 && !loadingSubcategories && (
+              <p className="text-sm text-gray-400 mt-1">
+                No subcategories found. Please create subcategories first in the
+                dashboard.
+              </p>
             )}
           </div>
+        )}
 
-          {selectedImage && (
-            <div className="mt-4">
-              <p className="text-sm text-gray-400 mb-2">Preview:</p>
-              <img
-                src={selectedImage}
-                alt="Preview"
-                className="w-full h-48 object-cover rounded border border-gray-600"
-              />
-            </div>
-          )}
-        </div>
+        {!bulkMode && (
+          <div>
+            <label className="block text-sm font-medium text-white mb-2">
+              Title *
+            </label>
+            <input
+              type="text"
+              required
+              value={newArtwork.title}
+              onChange={(e) =>
+                setNewArtwork({ ...newArtwork, title: e.target.value })
+              }
+              className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-secondary"
+              placeholder="Enter artwork title"
+            />
+          </div>
+        )}
 
         <div className="flex space-x-4">
           <Button
             type="submit"
-            disabled={loading || uploadingImage || !selectedImage}
+            disabled={
+              loading ||
+              uploadingImage ||
+              !newArtwork.sub_category ||
+              (bulkMode ? selectedImages.length === 0 : !selectedImage)
+            }
             className="bg-secondary hover:bg-secondary/80"
           >
             {loading ? (
               <>
                 <LoadingSpinner size="sm" className="mr-2" />
-                Creating...
+                {bulkMode ? "Creating Artworks..." : "Creating..."}
               </>
+            ) : bulkMode ? (
+              `Upload ${selectedImages.length} Artworks`
             ) : (
               "Upload Artwork"
             )}

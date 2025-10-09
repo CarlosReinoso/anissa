@@ -55,6 +55,9 @@ export default function DashboardRootLayout({ children }) {
         nav {
           display: none !important;
         }
+        header   {
+          display: none !important;
+        }
         footer {
           display: none !important;
         }

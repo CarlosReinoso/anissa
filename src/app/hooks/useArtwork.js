@@ -2,13 +2,23 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/config/supabase";
+import { generateUniqueSlug } from "@/utils/slug";
 
-export const useArtwork = (category = null) => {
+export const useArtwork = (filters = {}) => {
   const [artwork, setArtwork] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastFetch, setLastFetch] = useState(null);
   const abortControllerRef = useRef(null);
+
+  // Extract filters with defaults
+  const {
+    section = null,
+    category = null,
+    sub_category = null,
+    limit = null,
+    offset = 0,
+  } = filters;
 
   // Cache duration in milliseconds (5 minutes)
   const CACHE_DURATION = 5 * 60 * 1000;
@@ -39,12 +49,24 @@ export const useArtwork = (category = null) => {
         let query = supabase
           .from("artwork_images")
           .select("*")
+          .eq("published", true)
           .order("sort_order", { ascending: true })
           .order("created_at", { ascending: false });
 
-        // Filter by category if specified
+        // Apply filters
+        if (section) {
+          query = query.eq("section", section);
+        }
         if (category) {
           query = query.eq("category", category);
+        }
+        if (sub_category) {
+          query = query.eq("sub_category", sub_category);
+        }
+
+        // Apply pagination
+        if (limit) {
+          query = query.range(offset, offset + limit - 1);
         }
 
         const { data, error } = await query;
@@ -63,7 +85,7 @@ export const useArtwork = (category = null) => {
         setLoading(false);
       }
     },
-    [lastFetch, category]
+    [lastFetch, section, category, sub_category, limit, offset]
   );
 
   const addArtwork = useCallback(async (artworkData) => {
@@ -73,22 +95,49 @@ export const useArtwork = (category = null) => {
       // Validate required fields
       if (
         !artworkData.title ||
-        !artworkData.image_url ||
+        !artworkData.storage_path ||
         !artworkData.category
       ) {
-        throw new Error("Title, image URL, and category are required");
+        throw new Error("Title, storage path, and category are required");
       }
 
-      // Validate category
-      if (!["graphics", "tattoos"].includes(artworkData.category)) {
-        throw new Error("Category must be either 'graphics' or 'tattoos'");
+      // Validate section and category
+      if (
+        artworkData.section &&
+        !["graphics", "tattoos"].includes(artworkData.section)
+      ) {
+        throw new Error("Section must be either 'graphics' or 'tattoos'");
       }
+
+      // Function to check if slug exists
+      const checkSlugExists = async (slug) => {
+        const { data, error } = await supabase
+          .from("artwork_images")
+          .select("id")
+          .eq("slug", slug)
+          .single();
+
+        // If we get data, the slug exists
+        return !!data;
+      };
+
+      // Generate unique slug if not provided
+      let slug = artworkData.slug;
+      if (!slug) {
+        slug = await generateUniqueSlug(artworkData.title, checkSlugExists);
+      }
+
+      // Prepare artwork data with slug
+      const artworkWithSlug = {
+        ...artworkData,
+        slug: slug,
+      };
 
       // Optimistic update
       const tempId = `temp-${Date.now()}`;
       const optimisticArtwork = {
         id: tempId,
-        ...artworkData,
+        ...artworkWithSlug,
         sort_order: artworkData.sort_order || 0,
         created_at: new Date().toISOString(),
       };
@@ -97,7 +146,7 @@ export const useArtwork = (category = null) => {
 
       const { data, error } = await supabase
         .from("artwork_images")
-        .insert([artworkData])
+        .insert([artworkWithSlug])
         .select()
         .single();
 
@@ -124,12 +173,12 @@ export const useArtwork = (category = null) => {
       try {
         setError(null);
 
-        // Validate category if provided
+        // Validate section if provided
         if (
-          updates.category &&
-          !["graphics", "tattoos"].includes(updates.category)
+          updates.section &&
+          !["graphics", "tattoos"].includes(updates.section)
         ) {
-          throw new Error("Category must be either 'graphics' or 'tattoos'");
+          throw new Error("Section must be either 'graphics' or 'tattoos'");
         }
 
         // Optimistic update
@@ -265,6 +314,20 @@ export const useArtwork = (category = null) => {
     [artwork]
   );
 
+  const getArtworkBySection = useCallback(
+    (section) => {
+      return artwork.filter((item) => item.section === section);
+    },
+    [artwork]
+  );
+
+  const getArtworkBySubcategory = useCallback(
+    (subcategory) => {
+      return artwork.filter((item) => item.sub_category === subcategory);
+    },
+    [artwork]
+  );
+
   const clearError = useCallback(() => {
     setError(null);
   }, []);
@@ -295,6 +358,8 @@ export const useArtwork = (category = null) => {
     updateSortOrder,
     reorderArtwork,
     getArtworkByCategory,
+    getArtworkBySection,
+    getArtworkBySubcategory,
     clearError,
     refreshArtwork,
   };

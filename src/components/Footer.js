@@ -23,9 +23,9 @@ export default function Footer() {
         </div>
 
         <div className="mt-4 pt-4 border-t border-gray-300">
-          <p className="text-sm text-center md:text-right text-gray-600">
+          <p className="text-center md:text-right text-gray-600">
             Website by{" "}
-            <a href="https://carlosreinoso.co.uk/web-dev">
+            <a href="https://carlosreinoso.co.uk/web-dev" className="text-gray-600">
               Carlos Reinoso
               <span className="absolute bottom-0 left-0 w-full h-[1px] bg-current transform scale-x-0 origin-bottom-right transition-transform duration-300 ease-out group-hover:scale-x-100 group-hover:origin-bottom-left" />
             </a>

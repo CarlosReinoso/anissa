@@ -12,15 +12,9 @@ export default function GraphicsPage() {
       <section className="min-h-screen">
         <div className="container mx-auto px-6 py-12">
           <div className="text-center mb-12">
-            <h1 className="text-4xl md:text-6xl font-bold text-black mb-4">
+            <h1 className="text-4xl md:text-6xl font-bold text-black mb-36">
               Graphics
             </h1>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              A collection of conceptual and colourful artworks, minimal
-              continuous line illustrations, and hand-drawn pieces that explore
-              humanhood, modern feminism, nature, and reflections of
-              subconscious states.
-            </p>
           </div>
 
           {/* Graphics Artwork Grid */}

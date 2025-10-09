@@ -96,7 +96,7 @@ export default function ArtworkDashboard() {
             >
               <div className="aspect-square relative">
                 <img
-                  src={item.image_url}
+                  src={item.storage_path}
                   alt={item.title}
                   className="w-full h-full object-cover"
                 />

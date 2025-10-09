@@ -6,6 +6,8 @@ import { use } from "react";
 import { supabase } from "@/config/supabase";
 import Button from "@/components/Button";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import { generateUniqueSlug } from "@/utils/slug";
+import { compressImageIfNeeded } from "@/utils/imageCompression";
 
 export default function EditArtwork({ params }) {
   const unwrappedParams = use(params);
@@ -51,18 +53,42 @@ export default function EditArtwork({ params }) {
   const handleSave = async () => {
     try {
       setLoading(true);
+
+      // Check if title changed and generate new slug if needed
+      let updateData = {
+        title: editedArtwork.title,
+        description: editedArtwork.description,
+        category: editedArtwork.category,
+      };
+
+      // If title changed, generate new slug
+      if (editedArtwork.title !== artwork.title) {
+        const checkSlugExists = async (slug) => {
+          const { data, error } = await supabase
+            .from("artwork_images")
+            .select("id")
+            .eq("slug", slug)
+            .neq("id", unwrappedParams.artworkId) // Exclude current artwork
+            .single();
+
+          return !!data;
+        };
+
+        const newSlug = await generateUniqueSlug(
+          editedArtwork.title,
+          checkSlugExists
+        );
+        updateData.slug = newSlug;
+      }
+
       const { error } = await supabase
         .from("artwork_images")
-        .update({
-          title: editedArtwork.title,
-          description: editedArtwork.description,
-          category: editedArtwork.category,
-        })
+        .update(updateData)
         .eq("id", unwrappedParams.artworkId);
 
       if (error) throw error;
 
-      setArtwork({ ...artwork, ...editedArtwork });
+      setArtwork({ ...artwork, ...editedArtwork, ...updateData });
       setIsEditing(false);
     } catch (error) {
       console.error("Error updating artwork:", error);
@@ -86,12 +112,15 @@ export default function EditArtwork({ params }) {
       const file = event.target.files[0];
       if (!file) return;
 
+      // Compress image if needed
+      const compressedFile = await compressImageIfNeeded(file);
+
       // Upload image to Supabase Storage
-      const fileExt = file.name.split(".").pop();
+      const fileExt = compressedFile.name.split(".").pop();
       const fileName = `${Math.random()}.${fileExt}`;
       const { error: uploadError } = await supabase.storage
         .from("images")
-        .upload(fileName, file);
+        .upload(fileName, compressedFile);
 
       if (uploadError) throw uploadError;
 
@@ -103,7 +132,7 @@ export default function EditArtwork({ params }) {
       // Update the artwork with new image
       const { error: updateError } = await supabase
         .from("artwork_images")
-        .update({ image_url: publicUrl })
+        .update({ storage_path: publicUrl })
         .eq("id", unwrappedParams.artworkId);
 
       if (updateError) throw updateError;
@@ -308,7 +337,7 @@ export default function EditArtwork({ params }) {
 
         <div className="aspect-square max-w-md">
           <img
-            src={artwork.image_url}
+            src={artwork.storage_path}
             alt={artwork.title}
             className="w-full h-full object-cover rounded-lg border border-gray-600"
           />

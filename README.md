@@ -50,7 +50,7 @@ Each class includes:
 2. **class_images**: Stores class images
    - `id`: Unique identifier
    - `class_id`: Reference to classes table
-   - `image_url`: Image file path
+   - `storage_path`: Image file path
    - `sort_order`: Image ordering
    - `created_at`: Timestamp
 
