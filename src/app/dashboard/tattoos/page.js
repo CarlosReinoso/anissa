@@ -23,6 +23,7 @@ export default function TattoosDashboardPage() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [showMenuManager, setShowMenuManager] = useState(true);
   const [expandedMenus, setExpandedMenus] = useState({});
+  const [reorderingItems, setReorderingItems] = useState(new Set());
   const router = useRouter();
 
   useEffect(() => {
@@ -141,22 +142,76 @@ export default function TattoosDashboardPage() {
     }
   };
 
-  const handleReorderArtwork = async (
-    artworkId,
-    newSortOrder,
-    subcategoryId
-  ) => {
+  const handleReorderArtwork = async (artworkId, newIndex, subcategoryId) => {
+    // Add to loading state
+    setReorderingItems((prev) => new Set([...prev, artworkId]));
+
     try {
-      const { error } = await supabase
+      // Get all artworks in the same subcategory, ordered by current sort_order
+      const { data: artworks, error: fetchError } = await supabase
         .from("artwork_images")
-        .update({ sort_order: newSortOrder })
-        .eq("id", artworkId);
+        .select("*")
+        .eq("subcategory_id", subcategoryId)
+        .order("sort_order", { ascending: true });
 
-      if (error) throw error;
+      if (fetchError) throw fetchError;
 
-      handleMenuChange();
+      // Find the dragged artwork
+      const draggedArtwork = artworks.find((art) => art.id === artworkId);
+      if (!draggedArtwork) throw new Error("Artwork not found");
+
+      // Remove the dragged artwork from the array
+      const otherArtworks = artworks.filter((art) => art.id !== artworkId);
+
+      // Insert the dragged artwork at the new position
+      otherArtworks.splice(newIndex, 0, draggedArtwork);
+
+      // Update sort_order for all artworks in the new sequence
+      const updates = otherArtworks.map((artwork, index) => ({
+        id: artwork.id,
+        sort_order: index,
+      }));
+
+      // OPTIMISTIC UI UPDATE: Update local state immediately
+      setArtworksByMenu((prev) => {
+        const newState = { ...prev };
+        const menuItemId = Object.keys(newState).find(
+          (menuId) => newState[menuId][subcategoryId]
+        );
+
+        if (menuItemId && newState[menuItemId][subcategoryId]) {
+          newState[menuItemId][subcategoryId] = otherArtworks;
+        }
+
+        return newState;
+      });
+
+      // Use the reorder API to update all items at once (in background)
+      const response = await fetch("/api/artworks/reorder", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ updates }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to reorder artworks");
+      }
+
+      // Success - no need to refresh since we already updated optimistically
     } catch (err) {
+      // Revert optimistic update on error
+      handleMenuChange();
       alert(`Error reordering artwork: ${err.message}`);
+    } finally {
+      // Remove from loading state
+      setReorderingItems((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(artworkId);
+        return newSet;
+      });
     }
   };
 
@@ -372,7 +427,11 @@ export default function TattoosDashboardPage() {
                                         );
                                       }
                                     }}
-                                    className="group relative bg-gray-700 rounded-lg overflow-hidden cursor-move hover:ring-2 hover:ring-secondary transition-all"
+                                    className={`group relative bg-gray-700 rounded-lg overflow-hidden cursor-move hover:ring-2 hover:ring-secondary transition-all ${
+                                      reorderingItems.has(artwork.id)
+                                        ? "opacity-50 pointer-events-none"
+                                        : ""
+                                    }`}
                                   >
                                     {/* Image */}
                                     <div className="aspect-square relative">
@@ -382,6 +441,13 @@ export default function TattoosDashboardPage() {
                                         fill
                                         className="object-cover"
                                       />
+                                      {/* Loading overlay for reordering */}
+                                      {reorderingItems.has(artwork.id) && (
+                                        <div className="absolute inset-0 bg-black bg-opacity-70 flex items-center justify-center z-10">
+                                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+                                        </div>
+                                      )}
+
                                       {/* Overlay on hover */}
                                       <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                                         <button
@@ -413,7 +479,7 @@ export default function TattoosDashboardPage() {
                                         {artwork.title}
                                       </p>
                                       <p className="text-xs text-gray-400">
-                                        Order: {artwork.sort_order || 0}
+                                        Order: {index + 1}
                                       </p>
                                     </div>
                                   </div>

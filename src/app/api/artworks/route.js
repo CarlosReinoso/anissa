@@ -75,7 +75,7 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { section, category, sub_category, sort_order } = body;
+    const { section, category, sub_category, subcategory_id } = body;
 
     // Validate required fields
     if (!section || !category) {
@@ -85,9 +85,36 @@ export async function POST(request) {
       );
     }
 
+    // Determine the subcategory_id to use
+    const targetSubcategoryId = subcategory_id || sub_category;
+
+    // Get the next sort_order for this subcategory
+    let nextSortOrder = 0;
+    if (targetSubcategoryId) {
+      const { data: existingArtworks, error: countError } = await supabase
+        .from("artwork_images")
+        .select("sort_order")
+        .eq("subcategory_id", targetSubcategoryId)
+        .order("sort_order", { ascending: false })
+        .limit(1);
+
+      if (countError) {
+        console.error("Error getting sort order:", countError);
+      } else if (existingArtworks && existingArtworks.length > 0) {
+        nextSortOrder = existingArtworks[0].sort_order + 1;
+      }
+    }
+
+    // Prepare the artwork data with proper sort_order
+    const artworkData = {
+      ...body,
+      sort_order: nextSortOrder,
+      subcategory_id: targetSubcategoryId,
+    };
+
     const { data, error } = await supabase
       .from("artwork_images")
-      .insert([body])
+      .insert([artworkData])
       .select()
       .single();
 

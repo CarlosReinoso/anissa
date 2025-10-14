@@ -19,8 +19,8 @@ export default function Button({
       "bg-white text-black border-white hover:bg-black hover:text-white",
     outline:
       "bg-transparent text-white border-white hover:bg-white hover:text-black",
-    gold: "bg-yellow-400 text-black border-yellow-400 hover:bg-yellow-300 hover:text-black",
-    pink: "bg-pink-500 text-white border-pink-500 hover:bg-pink-400 hover:text-white",
+    gold: "bg-white text-black border-white hover:bg-gray-100 hover:text-black",
+    pink: "bg-gray-800 text-white border-gray-800 hover:bg-gray-700 hover:text-white",
     purple:
       "bg-purple-600 text-white border-purple-600 hover:bg-purple-500 hover:text-white",
   };

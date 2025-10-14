@@ -133,12 +133,29 @@ export const useArtwork = (filters = {}) => {
         slug: slug,
       };
 
+      // Get the next sort_order for this subcategory if not provided
+      let sortOrder = artworkData.sort_order;
+      if (sortOrder === undefined && artworkData.subcategory_id) {
+        const { data: existingArtworks, error: countError } = await supabase
+          .from("artwork_images")
+          .select("sort_order")
+          .eq("subcategory_id", artworkData.subcategory_id)
+          .order("sort_order", { ascending: false })
+          .limit(1);
+
+        if (!countError && existingArtworks && existingArtworks.length > 0) {
+          sortOrder = existingArtworks[0].sort_order + 1;
+        } else {
+          sortOrder = 0;
+        }
+      }
+
       // Optimistic update
       const tempId = `temp-${Date.now()}`;
       const optimisticArtwork = {
         id: tempId,
         ...artworkWithSlug,
-        sort_order: artworkData.sort_order || 0,
+        sort_order: sortOrder || 0,
         created_at: new Date().toISOString(),
       };
 

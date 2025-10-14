@@ -18,11 +18,11 @@ export default function Hero() {
           className="object-cover"
         />
 
-        {/* Enhanced overlay for better text readability with image colors */}
-        <div className="absolute inset-0 bg-gradient-to-b from-indigo-900/50 via-purple-900/30 to-pink-900/40 z-5"></div>
+        {/* Dark overlay for black theme */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/50 z-5"></div>
 
         {/* Additional dark overlay for text contrast */}
-        <div className="absolute inset-0 bg-black/30 z-6"></div>
+        <div className="absolute inset-0 bg-black/40 z-6"></div>
 
         {/* Animated background patterns */}
         <div className="absolute inset-0 z-1 overflow-hidden">
@@ -105,10 +105,10 @@ export default function Hero() {
               <h2
                 className="text-xl md:text-2xl lg:text-3xl font-medium font-figtree"
                 style={{
-                  color: "#fbbf24",
+                  color: "#ffffff",
                   textShadow:
-                    "0 0 15px rgba(251,191,36,0.6), 0 2px 4px rgba(0,0,0,0.8)",
-                  filter: "drop-shadow(0 0 8px rgba(251,191,36,0.4))",
+                    "0 0 15px rgba(255,255,255,0.6), 0 2px 4px rgba(0,0,0,0.8)",
+                  filter: "drop-shadow(0 0 8px rgba(255,255,255,0.4))",
                 }}
               >
                 {ARTIST_INFO.title}
@@ -116,25 +116,25 @@ export default function Hero() {
               <div className="flex items-center justify-center mt-2">
                 <div
                   className="w-16 h-px"
-                  style={{ backgroundColor: "rgba(251,191,36,0.6)" }}
+                  style={{ backgroundColor: "rgba(255,255,255,0.6)" }}
                 ></div>
                 <span
                   className="mx-4 text-sm md:text-base"
-                  style={{ color: "rgba(251,191,36,0.8)" }}
+                  style={{ color: "rgba(255,255,255,0.8)" }}
                 >
                   •
                 </span>
                 <div
                   className="w-16 h-px"
-                  style={{ backgroundColor: "rgba(251,191,36,0.6)" }}
+                  style={{ backgroundColor: "rgba(255,255,255,0.6)" }}
                 ></div>
               </div>
               <p
                 className="text-lg md:text-xl mt-2 font-figtree"
                 style={{
-                  color: "#f3e8ff",
+                  color: "#e5e7eb",
                   textShadow:
-                    "0 0 10px rgba(243,232,255,0.5), 0 2px 4px rgba(0,0,0,0.8)",
+                    "0 0 10px rgba(229,231,235,0.5), 0 2px 4px rgba(0,0,0,0.8)",
                 }}
               >
                 in Marseille
@@ -149,8 +149,8 @@ export default function Hero() {
               className="h-0.5 my-4"
               style={{
                 background:
-                  "linear-gradient(to right, transparent, #fbbf24, #ec4899, #fbbf24, transparent)",
-                boxShadow: "0 0 10px rgba(251,191,36,0.5)",
+                  "linear-gradient(to right, transparent, #ffffff, #e5e7eb, #ffffff, transparent)",
+                boxShadow: "0 0 10px rgba(255,255,255,0.5)",
               }}
             />
           </motion.div>
@@ -192,7 +192,7 @@ export default function Hero() {
           transition={{ delay: 1.5 }}
           className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10"
         >
-          <div className="w-6 h-10 border-2 border-yellow-400/60 rounded-full flex justify-center">
+          <div className="w-6 h-10 border-2 border-white/60 rounded-full flex justify-center">
             <motion.div
               animate={{
                 y: [0, 12, 0],
@@ -202,7 +202,7 @@ export default function Hero() {
                 repeat: Infinity,
                 repeatType: "loop",
               }}
-              className="w-1 h-2 bg-yellow-400/80 rounded-full mt-2"
+              className="w-1 h-2 bg-white/80 rounded-full mt-2"
             />
           </div>
         </motion.div>

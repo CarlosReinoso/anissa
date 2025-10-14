@@ -230,7 +230,23 @@ export default function NewArtwork() {
         // Handle bulk submission
         const artworkEntries = [];
 
-        for (const imageData of selectedImages) {
+        // Get the current highest sort_order for this subcategory
+        let currentSortOrder = -1;
+        if (newArtwork.subcategory_id) {
+          const { data: existingArtworks, error: countError } = await supabase
+            .from("artwork_images")
+            .select("sort_order")
+            .eq("subcategory_id", newArtwork.subcategory_id)
+            .order("sort_order", { ascending: false })
+            .limit(1);
+
+          if (!countError && existingArtworks && existingArtworks.length > 0) {
+            currentSortOrder = existingArtworks[0].sort_order;
+          }
+        }
+
+        for (let i = 0; i < selectedImages.length; i++) {
+          const imageData = selectedImages[i];
           const slug = await generateUniqueSlug(
             imageData.title,
             checkSlugExists
@@ -243,6 +259,7 @@ export default function NewArtwork() {
             category: newArtwork.category, // Keep for backward compatibility
             subcategory_id: newArtwork.subcategory_id,
             slug: slug,
+            sort_order: currentSortOrder + 1 + i, // Assign sequential sort_order
           });
         }
 
@@ -260,6 +277,21 @@ export default function NewArtwork() {
           checkSlugExists
         );
 
+        // Get the next sort_order for this subcategory
+        let nextSortOrder = 0;
+        if (newArtwork.subcategory_id) {
+          const { data: existingArtworks, error: countError } = await supabase
+            .from("artwork_images")
+            .select("sort_order")
+            .eq("subcategory_id", newArtwork.subcategory_id)
+            .order("sort_order", { ascending: false })
+            .limit(1);
+
+          if (!countError && existingArtworks && existingArtworks.length > 0) {
+            nextSortOrder = existingArtworks[0].sort_order + 1;
+          }
+        }
+
         // Create the artwork entry
         const { error } = await supabase.from("artwork_images").insert({
           title: newArtwork.title,
@@ -268,6 +300,7 @@ export default function NewArtwork() {
           category: newArtwork.category, // Keep for backward compatibility
           subcategory_id: newArtwork.subcategory_id,
           slug: slug,
+          sort_order: nextSortOrder,
         });
 
         if (error) throw error;
