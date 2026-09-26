@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import Button from "@/components/Button";
+import SiteStatusToggle from "@/components/dashboard/SiteStatusToggle";
 import { PlusIcon, ChartBarIcon, PhotoIcon } from "@heroicons/react/24/solid";
 
 export default function DashboardPage() {
@@ -105,6 +106,8 @@ export default function DashboardPage() {
             Add New Artwork
           </Button>
         </div>
+
+        <SiteStatusToggle />
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
